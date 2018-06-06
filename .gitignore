@@ -1,0 +1,72 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+.com.apple.*
+*.dSYM
+Thumbs.db
+
+renderer
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+# User-specific files (MonoDevelop/Xamarin Studio)
+*.userprefs
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+[Rr]elWithDebInfo/
+x64/
+x86/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+.vs/
+*.vcxproj*
+*.sln
+lib/
+
+
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+cmake_install.cmake
+*.cmake
+Makefile
