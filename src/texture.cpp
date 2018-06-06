@@ -21,7 +21,7 @@ Texture::Texture(int width, int height)
 
 Texture::Texture(std::string filename) : id(0), filename(filename) {
   int texChannels;
-  // stbi_set_flip_vertically_on_load(true);
+  stbi_set_flip_vertically_on_load(true);
   stbi_uc *pixels = stbi_load(filename.c_str(), &this->width, &this->height,
                               &texChannels, STBI_rgb_alpha);
   if (pixels != nullptr) {
@@ -40,8 +40,6 @@ Texture::Texture(std::string filename) : id(0), filename(filename) {
 
     stbi_image_free(pixels);
     glBindTexture(GL_TEXTURE_2D, 0);
-  } else {
-    throw std::runtime_error("Cannot load texture (" + filename + ")");
   }
 }
 

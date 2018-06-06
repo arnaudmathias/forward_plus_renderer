@@ -5,7 +5,20 @@ Game::Game(void) {
       new Camera(glm::vec3(0.0f, 5.0f, -5.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 
   Model model = Model("data/sponza/sponza.obj");
-  vao = new VAO(model.vertices, model.indices);
+  for (const auto& mesh : model.meshes) {
+    std::vector<Vertex> vertices;
+    for (size_t i = mesh.vertexOffset;
+         i < model.vertices.size() && i < mesh.vertexOffset + mesh.indexCount;
+         i++) {
+      vertices.push_back(model.vertices[i]);
+    }
+    render::Attrib attrib;
+    attrib.shader_key = "default";
+    attrib.model = glm::scale(glm::vec3(0.01f));
+    attrib.texture = new Texture(mesh.diffuse_texname);
+    attrib.vaos.push_back(new VAO(vertices));
+    attribs.push_back(attrib);
+  }
 }
 
 Game::Game(Game const& src) { *this = src; }
@@ -35,11 +48,9 @@ void Game::render(const Env& env, render::Renderer& renderer) {
   renderer.uniforms.proj = _camera->proj;
   renderer.uniforms.view_proj = _camera->proj * _camera->view;
 
-  render::Attrib scene_attrib;
-  scene_attrib.shader_key = "default";
-  scene_attrib.model = glm::scale(glm::vec3(0.01f));
-  scene_attrib.vaos.push_back(vao);
-  renderer.addAttrib(scene_attrib);
+  for (const auto& attrib : attribs) {
+    renderer.addAttrib(attrib);
+  }
 
   renderer.draw();
 
