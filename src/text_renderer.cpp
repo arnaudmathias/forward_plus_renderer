@@ -4,7 +4,7 @@
 namespace render {
 
 TextRenderer::TextRenderer(void) {
-  loadFont("fonts/minecraft.ttf");
+  loadFont("data/fonts/minecraft.ttf");
   std::vector<glm::vec4> dummy(6);
   _vao = new VAO(dummy);
 }

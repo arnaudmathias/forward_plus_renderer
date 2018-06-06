@@ -1,6 +1,6 @@
 #pragma once
 #include <iostream>
-#include "anim.hpp"
+#include "forward.hpp"
 
 class FrustrumCulling {
  public:

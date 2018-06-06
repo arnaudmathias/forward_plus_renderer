@@ -8,7 +8,6 @@
 #include <sys/types.h>
 #include <iostream>
 #include <string>
-#include "anim.hpp"
 
 namespace io {
 bool exists(std::string filename);

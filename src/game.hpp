@@ -1,7 +1,7 @@
 #pragma once
 #include <iomanip>
-#include "anim.hpp"
 #include "camera.hpp"
+#include "forward.hpp"
 #include "model.hpp"
 #include "renderer.hpp"
 
@@ -9,7 +9,7 @@ class Game {
  public:
   Game(void);
   Game(Game const& src);
-  virtual ~Game(void);
+  ~Game(void);
   Game& operator=(Game const& rhs);
   void update(Env& env);
   void render(const Env& env, render::Renderer& renderer);
@@ -17,7 +17,7 @@ class Game {
  private:
   bool _debugMode = false;
   Camera* _camera;
-  std::vector<Model*> _models;
+  VAO* vao = nullptr;
 
   void print_debug_info(const Env& env, render::Renderer& renderer,
                         Camera& camera);

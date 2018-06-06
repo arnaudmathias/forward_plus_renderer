@@ -9,7 +9,7 @@ Camera::Camera(glm::vec3 position, glm::vec3 targetPosition, int width,
       zNear(0.1f),
       zFar(1000.0f),
       mouseMoved(false),
-      speed(1.0f) {
+      speed(5.0f) {
   proj = glm::perspective(
       glm::radians(80.0f),
       static_cast<float>(width) / static_cast<float>(height), zNear, zFar);
@@ -21,8 +21,8 @@ Camera::Camera(glm::vec3 position, glm::vec3 targetPosition, int width,
 
 void Camera::updateMatrix(float deltaTime) {
   if (mouseMoved) {
-    horAngle += 0.1f * deltaTime * (oldMouseXpos - mouseXpos);
-    verAngle += 0.1f * deltaTime * (oldMouseYpos - mouseYpos);
+    horAngle += 0.2f * deltaTime * (oldMouseXpos - mouseXpos);
+    verAngle += 0.2f * deltaTime * (oldMouseYpos - mouseYpos);
     verAngle = glm::clamp(verAngle, -1.5f, 1.5f);
     mouseMoved = false;
   }

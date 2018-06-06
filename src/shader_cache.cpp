@@ -1,13 +1,8 @@
 #include "shader_cache.hpp"
 
 ShaderCache::ShaderCache(void) {
-  _shaders.emplace("anim", new Shader("shaders/anim"));
-  _shaders.emplace("anim_debug", new Shader("shaders/anim_debug"));
-  _shaders.emplace("billboard", new Shader("shaders/billboard"));
-  _shaders.emplace("skybox", new Shader("shaders/skybox"));
-  _shaders.emplace("ui", new Shader("shaders/ui"));
+  _shaders.emplace("default", new Shader("shaders/default"));
   _shaders.emplace("text", new Shader("shaders/text"));
-  _shaders.emplace("void_model", new Shader("shaders/void_model"));
 }
 
 ShaderCache::ShaderCache(ShaderCache const& src) { *this = src; }

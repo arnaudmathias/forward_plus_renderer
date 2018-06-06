@@ -14,8 +14,7 @@
 struct Vertex {
   glm::vec3 position = {0, 0, 0};
   glm::vec3 normal = {0, 0, 0};
-  glm::ivec4 bone_ids = {0, 0, 0, 0};
-  glm::vec4 weights = {0, 0, 0, 0};
+  glm::vec2 uv = {0, 0};
 
   Vertex() : position({0.0f, 0.0f, 0.0f}){};
   Vertex(Vertex const& src) { *this = src; }
@@ -24,8 +23,7 @@ struct Vertex {
     if (this != &rhs) {
       this->position = rhs.position;
       this->normal = rhs.normal;
-      this->bone_ids = rhs.bone_ids;
-      this->weights = rhs.weights;
+      this->uv = rhs.uv;
     }
     return (*this);
   };

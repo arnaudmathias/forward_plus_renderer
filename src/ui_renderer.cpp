@@ -2,19 +2,6 @@
 
 namespace render {
 UiRenderer::UiRenderer(void) {
-  /*
-  glGenVertexArrays(1, &this->_vao);
-  glGenBuffers(1, &this->_vbo);
-
-  glBindVertexArray(this->_vao);
-  glBindBuffer(GL_ARRAY_BUFFER, this->_vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
-
-  glEnableVertexAttribArray(0);
-
-  glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), 0);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0);*/
   std::vector<glm::vec4> dummy(6);
   _vao = new VAO(dummy);
 }
@@ -77,9 +64,6 @@ void UiRenderer::renderUI(Shader *shader, std::string texture_name, float pos_x,
       {xpos, ypos + h, 0.0, 0.0},    {xpos + w, ypos, 1.0, 1.0},
       {xpos + w, ypos + h, 1.0, 0.0}};
   glBindTexture(GL_TEXTURE_2D, texture->id);
-  /*
-  glBindBuffer(GL_ARRAY_BUFFER, this->_vbo);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);*/
   _vao->update(vertices);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glDrawArrays(GL_TRIANGLES, 0, 6);

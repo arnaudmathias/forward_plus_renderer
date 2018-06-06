@@ -6,10 +6,7 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {}
 
 Renderer::Renderer(Renderer const &src) { *this = src; }
 
-Renderer::~Renderer(void) {
-  delete _cubeMapVao;
-  delete _cubeMapTexture;
-}
+Renderer::~Renderer(void) {}
 
 Renderer &Renderer::operator=(Renderer const &rhs) {
   if (this != &rhs) {
@@ -70,7 +67,6 @@ void Renderer::updateUniforms(const Attrib &attrib, const int shader_id) {
     glm::mat4 mvp = uniforms.view_proj * attrib.model;
     setUniform(glGetUniformLocation(shader_id, "MVP"), mvp);
     setUniform(glGetUniformLocation(shader_id, "M"), attrib.model);
-    setUniform(glGetUniformLocation(shader_id, "B"), attrib.bones);
   }
 }
 
@@ -103,23 +99,6 @@ void Renderer::draw() {
     }
   }
 
-  if (this->_cubeMapVao != nullptr) {
-    Shader *shader = _shaderCache.getShader("skybox");
-    if (shader != nullptr) {
-      switchDepthTestFunc(DepthTestFunc::LessEqual);
-      switchShader(shader->id, shader_id);
-      setUniform(glGetUniformLocation(shader_id, "P"), this->uniforms.proj);
-      setUniform(glGetUniformLocation(shader_id, "V"),
-                 glm::mat4(glm::mat3(this->uniforms.view)));
-      setUniform(glGetUniformLocation(shader_id, "skybox"), 0);
-      glBindVertexArray(this->_cubeMapVao->vao);
-      if (this->_cubeMapTexture) {
-        glBindTexture(GL_TEXTURE_CUBE_MAP, this->_cubeMapTexture->id);
-      }
-      glDrawArrays(GL_TRIANGLES, 0, 36);
-      switchDepthTestFunc(DepthTestFunc::Less);
-    }
-  }
   setState(_state);
   glBindVertexArray(0);
 }
@@ -138,29 +117,6 @@ void Renderer::flushAttribs() { this->_attribs.clear(); }
 int Renderer::getScreenWidth() { return (this->_width); }
 
 int Renderer::getScreenHeight() { return (this->_height); }
-
-void Renderer::loadCubeMap(std::string vertex_sha, std::string fragment_sha,
-                           const std::vector<std::string> &textures) {
-  std::vector<glm::vec3> skyboxVertices = {
-      {-1.0f, 1.0f, -1.0f},  {-1.0f, -1.0f, -1.0f}, {1.0f, -1.0f, -1.0f},
-      {1.0f, -1.0f, -1.0f},  {1.0f, 1.0f, -1.0f},   {-1.0f, 1.0f, -1.0f},
-      {-1.0f, -1.0f, 1.0f},  {-1.0f, -1.0f, -1.0f}, {-1.0f, 1.0f, -1.0f},
-      {-1.0f, 1.0f, -1.0f},  {-1.0f, 1.0f, 1.0f},   {-1.0f, -1.0f, 1.0f},
-      {1.0f, -1.0f, -1.0f},  {1.0f, -1.0f, 1.0f},   {1.0f, 1.0f, 1.0f},
-      {1.0f, 1.0f, 1.0f},    {1.0f, 1.0f, -1.0f},   {1.0f, -1.0f, -1.0f},
-      {-1.0f, -1.0f, 1.0f},  {-1.0f, 1.0f, 1.0f},   {1.0f, 1.0f, 1.0f},
-      {1.0f, 1.0f, 1.0f},    {1.0f, -1.0f, 1.0f},   {-1.0f, -1.0f, 1.0f},
-      {-1.0f, 1.0f, -1.0f},  {1.0f, 1.0f, -1.0f},   {1.0f, 1.0f, 1.0f},
-      {1.0f, 1.0f, 1.0f},    {-1.0f, 1.0f, 1.0f},   {-1.0f, 1.0f, -1.0f},
-      {-1.0f, -1.0f, -1.0f}, {-1.0f, -1.0f, 1.0f},  {1.0f, -1.0f, -1.0f},
-      {1.0f, -1.0f, -1.0f},  {-1.0f, -1.0f, 1.0f},  {1.0f, -1.0f, 1.0f}};
-  try {
-    this->_cubeMapTexture = new Texture(textures);
-  } catch (std::runtime_error &e) {
-    std::cerr << e.what() << std::endl;
-  }
-  this->_cubeMapVao = new VAO(skyboxVertices);
-}
 
 void Renderer::clearScreen() {
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);

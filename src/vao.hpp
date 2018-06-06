@@ -1,8 +1,8 @@
 #pragma once
 #include <algorithm>
 #include <vector>
-#include "anim.hpp"
 #include "env.hpp"
+#include "forward.hpp"
 
 struct VAO {
   VAO(const std::vector<Vertex>& vertices);

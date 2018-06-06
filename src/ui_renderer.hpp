@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 #include <unordered_map>
-#include "anim.hpp"
+#include "forward.hpp"
 #include "shader.hpp"
 #include "texture.hpp"
 #include "vao.hpp"

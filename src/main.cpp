@@ -4,10 +4,9 @@
 
 int main(int argc, char **argv) {
   Env env(1280, 720);
-  env.inputHandler.mouseDisabled = true;
-  env.inputHandler.keybrDisabled = true;
+  env.inputHandler.mouseDisabled = false;
+  env.inputHandler.keybrDisabled = false;
   render::Renderer renderer(env.width, env.height);
-  GL_DUMP_ERROR("renderer init");
   Game game;
   while (!glfwWindowShouldClose(env.window)) {
     env.update();
@@ -16,7 +15,6 @@ int main(int argc, char **argv) {
     renderer.update(env);
     renderer.clearScreen();
     game.render(env, renderer);
-    // GL_DUMP_ERROR("draw loop");
     glfwSwapBuffers(env.window);
   }
   return (EXIT_SUCCESS);

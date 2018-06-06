@@ -3,18 +3,14 @@
 Game::Game(void) {
   _camera =
       new Camera(glm::vec3(0.0f, 5.0f, -5.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-  //_models.push_back(loader.loadScene("anims/Walking.dae"));
-  //_models.push_back(loader.loadScene("anims/Jumping.dae"));
+
+  Model model = Model("data/sponza/sponza.obj");
+  vao = new VAO(model.vertices, model.indices);
 }
 
 Game::Game(Game const& src) { *this = src; }
 
-Game::~Game(void) {
-  delete _camera;
-  for (auto& model : _models) {
-    delete model;
-  }
-}
+Game::~Game(void) { delete _camera; }
 
 Game& Game::operator=(Game const& rhs) {
   if (this != &rhs) {
@@ -38,6 +34,12 @@ void Game::render(const Env& env, render::Renderer& renderer) {
   renderer.uniforms.view = _camera->view;
   renderer.uniforms.proj = _camera->proj;
   renderer.uniforms.view_proj = _camera->proj * _camera->view;
+
+  render::Attrib scene_attrib;
+  scene_attrib.shader_key = "default";
+  scene_attrib.model = glm::scale(glm::vec3(0.01f));
+  scene_attrib.vaos.push_back(vao);
+  renderer.addAttrib(scene_attrib);
 
   renderer.draw();
 

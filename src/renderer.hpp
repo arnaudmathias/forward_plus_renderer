@@ -3,8 +3,8 @@
 #include <map>
 #include <unordered_map>
 #include <vector>
-#include "anim.hpp"
 #include "env.hpp"
+#include "forward.hpp"
 #include "io.hpp"
 #include "shader.hpp"
 #include "shader_cache.hpp"
@@ -106,8 +106,6 @@ class Renderer {
   void flushAttribs();
   int getScreenWidth();
   int getScreenHeight();
-  void loadCubeMap(std::string vertex_sha, std::string fragment_sha,
-                   const std::vector<std::string>& textures);
   void clearScreen();
 
   void setState(const RenderState& new_state);
@@ -125,8 +123,6 @@ class Renderer {
   std::vector<Attrib> _attribs;
   int _width = 0;
   int _height = 0;
-  Texture* _cubeMapTexture = nullptr;
-  VAO* _cubeMapVao = nullptr;
   ShaderCache _shaderCache;
 
   RenderState _state;

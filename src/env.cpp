@@ -143,9 +143,8 @@ void Env::updateFpsCounter() {
     previous_seconds = current_seconds;
     this->_fps =
         static_cast<float>(frame_count) / static_cast<float>(elapsed_seconds);
-    std::ostringstream tmp;
-    tmp << _fps << " fps";
-    glfwSetWindowTitle(window, tmp.str().c_str());
+    std::string tmp = std::to_string(_fps);
+    glfwSetWindowTitle(window, tmp.c_str());
     frame_count = 0;
   }
   frame_count++;
