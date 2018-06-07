@@ -15,7 +15,13 @@ Game::Game(void) {
     render::Attrib attrib;
     attrib.shader_key = "default";
     attrib.model = glm::scale(glm::vec3(0.01f));
-    attrib.texture = new Texture(mesh.diffuse_texname);
+
+    // attrib.diffuse = loadTextureFromDisk(mesh.diffuse_texname);
+    //_textureCache.loadTexture2D(mesh.diffuse_texname);
+
+    attrib.diffuse = new Texture(mesh.diffuse_texname);
+    attrib.specular = new Texture(mesh.specular_texname);
+    attrib.bump = new Texture(mesh.normal_texname);
     attrib.vaos.push_back(new VAO(vertices));
     attribs.push_back(attrib);
   }

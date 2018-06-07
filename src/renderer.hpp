@@ -82,7 +82,16 @@ struct Attrib {
   glm::mat4 model = glm::mat4(1.0f);
   std::string shader_key = "";
   std::vector<VAO*> vaos;
-  Texture* texture = nullptr;
+  Material material;
+
+  Texture* ambient = nullptr;
+  Texture* emissive = nullptr;
+  Texture* diffuse = nullptr;
+  Texture* specular = nullptr;
+  Texture* specular_power = nullptr;
+  Texture* normal = nullptr;
+  Texture* bump = nullptr;
+  Texture* opacity = nullptr;
 
   RenderState state;
   Attrib(){};
@@ -101,7 +110,8 @@ class Renderer {
                   glm::vec3 color);
   void renderUI(std::string filename, float pos_x, float pos_y, float scale,
                 bool centered);
-  void bindTexture(Texture* texture, int& texture_binded, GLenum tex_slot);
+  void bindTexture(Texture* texture, unsigned int& texture_binded,
+                   GLenum tex_slot);
   void update(const Env& env);
   void draw();
   void flushAttribs();

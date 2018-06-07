@@ -11,6 +11,45 @@
 #include <iomanip>
 #include <iostream>
 
+struct Material {
+  glm::vec4 global_ambient;
+  glm::vec4 ambient_color;
+  glm::vec4 emissive_color;
+  glm::vec4 diffuse_color;
+  glm::vec4 specular_color;
+  glm::vec4 reflectance;
+  float opacity;
+  float specular_power;
+  float index_of_refraction;
+  bool has_ambient_texture;
+  bool has_emissive_texture;
+  bool has_diffuse_texture;
+  bool has_specular_texture;
+  bool has_specular_power_texture;
+  bool has_normal_texture;
+  bool has_bump_texture;
+  bool has_opacity_texture;
+  float bump_intensity;
+  float specular_Scale;
+  float alpha_threshold;
+  glm::vec2 padding;
+};
+
+struct Light {
+  glm::vec4 position_ws;
+  glm::vec4 direction_ws;
+  glm::vec4 position_vs;
+  glm::vec4 direction_vs;
+  glm::vec4 color;
+  float spotlight_angle;
+  float range;
+  float intensity;
+  bool enabled;
+  bool selected;
+  unsigned int type;
+  glm::vec2 padding;
+};
+
 struct Vertex {
   glm::vec3 position = {0, 0, 0};
   glm::vec3 normal = {0, 0, 0};

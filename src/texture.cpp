@@ -22,7 +22,7 @@ Texture::Texture(int width, int height)
 Texture::Texture(std::string filename) : id(0), filename(filename) {
   int texChannels;
   stbi_set_flip_vertically_on_load(true);
-  stbi_uc *pixels = stbi_load(filename.c_str(), &this->width, &this->height,
+  stbi_uc* pixels = stbi_load(filename.c_str(), &this->width, &this->height,
                               &texChannels, STBI_rgb_alpha);
   if (pixels != nullptr) {
     glGenTextures(1, &this->id);
@@ -46,7 +46,7 @@ Texture::Texture(std::string filename) : id(0), filename(filename) {
 Texture::Texture(std::string filename, int offset_x, int offset_y) {
   int texChannels;
   // stbi_set_flip_vertically_on_load(true);
-  stbi_uc *pixels = stbi_load(filename.c_str(), &this->width, &this->height,
+  stbi_uc* pixels = stbi_load(filename.c_str(), &this->width, &this->height,
                               &texChannels, STBI_rgb_alpha);
   if (pixels != nullptr) {
     glGenTextures(1, &this->id);
@@ -55,7 +55,7 @@ Texture::Texture(std::string filename, int offset_x, int offset_y) {
     glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, offset_x, offset_y, depth, 0,
                  GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     int zoffset = 0;
-    unsigned char *sub_pixels =
+    unsigned char* sub_pixels =
         new unsigned char[offset_x * offset_y * texChannels];
     // Parse texture atlas and generate sub textures at each offset
     for (int y_atlas = 0; y_atlas < height; y_atlas += offset_y) {
@@ -94,12 +94,12 @@ Texture::Texture(std::string filename, int offset_x, int offset_y) {
   }
 }
 
-Texture::Texture(const std::vector<std::string> &textures) : id(0) {
+Texture::Texture(const std::vector<std::string>& textures) : id(0) {
   glGenTextures(1, &this->id);
   glBindTexture(GL_TEXTURE_CUBE_MAP, this->id);
   int width, height, nrChannels;
   for (unsigned int i = 0; i < textures.size(); i++) {
-    unsigned char *data =
+    unsigned char* data =
         stbi_load(textures[i].c_str(), &width, &height, &nrChannels, 0);
     if (data) {
       glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height,

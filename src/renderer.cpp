@@ -48,18 +48,22 @@ void Renderer::renderUI(std::string filename, float pos_x, float pos_y,
 
   setState(backup_state);
 }
-void Renderer::bindTexture(Texture *texture, int &texture_binded,
+void Renderer::bindTexture(Texture *texture, unsigned int &texture_binded,
                            GLenum tex_slot) {
   if (texture != nullptr) {
     if (texture->id != texture_binded && texture->id > 0) {
       glActiveTexture(tex_slot);
       glBindTexture(GL_TEXTURE_2D, texture->id);
       texture_binded = texture->id;
+    } else {
+      glActiveTexture(tex_slot);
+      glBindTexture(GL_TEXTURE_2D, 0);
+      texture_binded = 0;
     }
   } else {
     glActiveTexture(tex_slot);
     glBindTexture(GL_TEXTURE_2D, 0);
-    texture_binded = -1;
+    texture_binded = 0;
   }
 }
 
@@ -81,7 +85,9 @@ void Renderer::updateUniforms(const Attrib &attrib, const int shader_id) {
     glm::mat4 mvp = uniforms.view_proj * attrib.model;
     setUniform(glGetUniformLocation(shader_id, "MVP"), mvp);
     setUniform(glGetUniformLocation(shader_id, "M"), attrib.model);
-    setUniform(glGetUniformLocation(shader_id, "iChannel0"), 0);
+    setUniform(glGetUniformLocation(shader_id, "sdiffuse"), 0);
+    setUniform(glGetUniformLocation(shader_id, "sspecular"), 1);
+    setUniform(glGetUniformLocation(shader_id, "sbump"), 2);
   }
 }
 
@@ -89,7 +95,9 @@ void Renderer::draw() {
   RenderState backup_state = _state;
   // std::sort(_renderAttribs.begin(), _renderAttribs.end());
   int shader_id = -1;
-  int texture_id = -1;
+  unsigned int texture_diffuse = 0;
+  unsigned int texture_specular = 0;
+  unsigned int texture_bump = 0;
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glViewport(0, 0, _width, _height);
   switchDepthTestState(true);
@@ -99,7 +107,11 @@ void Renderer::draw() {
       continue;
     }
     setState(attrib.state);
-    bindTexture(attrib.texture, texture_id, GL_TEXTURE0);
+
+    bindTexture(attrib.diffuse, texture_diffuse, GL_TEXTURE0);
+    bindTexture(attrib.specular, texture_specular, GL_TEXTURE1);
+    bindTexture(attrib.bump, texture_bump, GL_TEXTURE2);
+
     switchShader(shader->id, shader_id);
     updateUniforms(attrib, shader->id);
     GLenum mode = getGLRenderMode(attrib.state.primitiveMode);

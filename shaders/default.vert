@@ -14,5 +14,5 @@ void main() {
   gl_Position = MVP * vec4(vert_pos, 1.0);
   frag_pos = vec3(M * vec4(vert_pos, 1.0));
   frag_normal = vec3(MVP * vec4(vert_normal, 0.0));
-	frag_uv = vert_uv;
+  frag_uv = vert_uv;
 }
