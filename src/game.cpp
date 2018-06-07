@@ -2,7 +2,7 @@
 
 Game::Game(void) {
   _camera =
-      new Camera(glm::vec3(0.0f, 5.0f, -5.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+      new Camera(glm::vec3(0.0f, 5.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 
   Model model = Model("data/sponza/sponza.obj");
   for (const auto& mesh : model.meshes) {
@@ -14,14 +14,12 @@ Game::Game(void) {
     }
     render::Attrib attrib;
     attrib.shader_key = "default";
-    attrib.model = glm::scale(glm::vec3(0.01f));
-
-    // attrib.diffuse = loadTextureFromDisk(mesh.diffuse_texname);
-    //_textureCache.loadTexture2D(mesh.diffuse_texname);
+    // attrib.model = glm::scale(glm::vec3(0.01f));
+    attrib.model = glm::mat4(1.0f);
 
     attrib.diffuse = new Texture(mesh.diffuse_texname);
     attrib.specular = new Texture(mesh.specular_texname);
-    attrib.bump = new Texture(mesh.normal_texname);
+    // attrib.bump = new Texture(mesh.bump_texname);
     attrib.vaos.push_back(new VAO(vertices));
     attribs.push_back(attrib);
   }
@@ -53,6 +51,7 @@ void Game::render(const Env& env, render::Renderer& renderer) {
   renderer.uniforms.view = _camera->view;
   renderer.uniforms.proj = _camera->proj;
   renderer.uniforms.view_proj = _camera->proj * _camera->view;
+  renderer.uniforms.time = env.getAbsoluteTime();
 
   for (const auto& attrib : attribs) {
     renderer.addAttrib(attrib);

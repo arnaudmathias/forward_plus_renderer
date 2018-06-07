@@ -4,15 +4,8 @@
 
 Mesh::Mesh() {}
 
-Mesh::Mesh(uint32_t count, int32_t offset, std::string ambient_tex,
-           std::string diffuse_tex, std::string specular_tex,
-           std::string normal_tex)
-    : indexCount(count),
-      vertexOffset(offset),
-      ambient_texname(ambient_tex),
-      diffuse_texname(diffuse_tex),
-      specular_texname(specular_tex),
-      normal_texname(normal_tex) {}
+Mesh::Mesh(uint32_t count, int32_t offset)
+    : indexCount(count), vertexOffset(offset) {}
 
 Mesh::~Mesh() {}
 
@@ -34,15 +27,19 @@ Model::Model(const std::string filename) {
     materials.push_back(tinyobj::material_t());
   }
   for (const auto& material : materials) {
-    std::cout << "mat ambient: "
-              << sanitizeFilename(basedir + material.ambient_texname) << "\n";
-    std::cout << "mat diffuse: "
-              << sanitizeFilename(basedir + material.diffuse_texname) << "\n";
-    meshes.push_back(Mesh(0, 0,
-                          sanitizeFilename(basedir + material.ambient_texname),
-                          sanitizeFilename(basedir + material.diffuse_texname),
-                          sanitizeFilename(basedir + material.specular_texname),
-                          sanitizeFilename(basedir + material.bump_texname)));
+    Mesh mesh(0, 0);
+    mesh.ambient_texname = sanitizeFilename(basedir + material.ambient_texname);
+    mesh.diffuse_texname = sanitizeFilename(basedir + material.diffuse_texname);
+    mesh.specular_texname =
+        sanitizeFilename(basedir + material.specular_texname);
+    mesh.bump_texname = sanitizeFilename(basedir + material.bump_texname);
+
+    mesh.material.specular_color = glm::vec4(
+        material.specular[0], material.specular[1], material.specular[2], 1.0f);
+    mesh.material.ambient_color = glm::vec4(
+        material.ambient[0], material.ambient[1], material.ambient[2], 1.0f);
+
+    meshes.push_back(mesh);
   }
 
   struct Face {

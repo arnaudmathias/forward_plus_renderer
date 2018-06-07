@@ -2,7 +2,25 @@
 
 namespace render {
 
-Renderer::Renderer(int width, int height) : _width(width), _height(height) {}
+Renderer::Renderer(int width, int height) : _width(width), _height(height) {
+  for (int i = 0; i < 10; i++) {
+    light_ubo.lights[i].enabled = 1;
+    light_ubo.lights[i].intensity = 1.0f;
+    light_ubo.lights[i].range = 300.0f;
+    light_ubo.lights[i].color = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
+    light_ubo.lights[i].direction_ws =
+        glm::normalize(glm::vec4(0.0f, -1.0f, 0.2f, 0.0f));
+    light_ubo.lights[i].position_ws =
+        glm::vec4(0.0f, 100.0f + i * 100.0f, 0.0f, 1.0f);
+  }
+  light_ubo.lights[0].color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+  light_ubo.lights[0].type = 1;
+  glGenBuffers(1, &light_id);
+  glBindBuffer(GL_UNIFORM_BUFFER, light_id);
+  glBufferData(GL_UNIFORM_BUFFER, sizeof(LightUBO), &light_ubo,
+               GL_DYNAMIC_DRAW);
+  glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
 
 Renderer::Renderer(Renderer const &src) { *this = src; }
 
@@ -48,22 +66,13 @@ void Renderer::renderUI(std::string filename, float pos_x, float pos_y,
 
   setState(backup_state);
 }
-void Renderer::bindTexture(Texture *texture, unsigned int &texture_binded,
-                           GLenum tex_slot) {
-  if (texture != nullptr) {
-    if (texture->id != texture_binded && texture->id > 0) {
-      glActiveTexture(tex_slot);
-      glBindTexture(GL_TEXTURE_2D, texture->id);
-      texture_binded = texture->id;
-    } else {
-      glActiveTexture(tex_slot);
-      glBindTexture(GL_TEXTURE_2D, 0);
-      texture_binded = 0;
-    }
+void Renderer::bindTexture(Texture *texture, GLenum tex_slot) {
+  if (texture != nullptr && texture->id != 0) {
+    glActiveTexture(tex_slot);
+    glBindTexture(GL_TEXTURE_2D, texture->id);
   } else {
     glActiveTexture(tex_slot);
     glBindTexture(GL_TEXTURE_2D, 0);
-    texture_binded = 0;
   }
 }
 
@@ -84,10 +93,11 @@ void Renderer::updateUniforms(const Attrib &attrib, const int shader_id) {
   if (shader_id > 0 && attrib.vaos.size() > 0) {
     glm::mat4 mvp = uniforms.view_proj * attrib.model;
     setUniform(glGetUniformLocation(shader_id, "MVP"), mvp);
+    setUniform(glGetUniformLocation(shader_id, "MV"),
+               uniforms.view * attrib.model);
     setUniform(glGetUniformLocation(shader_id, "M"), attrib.model);
-    setUniform(glGetUniformLocation(shader_id, "sdiffuse"), 0);
-    setUniform(glGetUniformLocation(shader_id, "sspecular"), 1);
-    setUniform(glGetUniformLocation(shader_id, "sbump"), 2);
+    setUniform(glGetUniformLocation(shader_id, "diffuse_tex"), 0);
+    setUniform(glGetUniformLocation(shader_id, "specular_tex"), 1);
   }
 }
 
@@ -95,11 +105,9 @@ void Renderer::draw() {
   RenderState backup_state = _state;
   // std::sort(_renderAttribs.begin(), _renderAttribs.end());
   int shader_id = -1;
-  unsigned int texture_diffuse = 0;
-  unsigned int texture_specular = 0;
-  unsigned int texture_bump = 0;
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glViewport(0, 0, _width, _height);
+
   switchDepthTestState(true);
   for (const auto &attrib : this->_attribs) {
     Shader *shader = _shaderCache.getShader(attrib.shader_key);
@@ -108,12 +116,28 @@ void Renderer::draw() {
     }
     setState(attrib.state);
 
-    bindTexture(attrib.diffuse, texture_diffuse, GL_TEXTURE0);
-    bindTexture(attrib.specular, texture_specular, GL_TEXTURE1);
-    bindTexture(attrib.bump, texture_bump, GL_TEXTURE2);
+    glm::mat4 mv = uniforms.view * attrib.model;
+    for (int i = 0; i < 10; i++) {
+      light_ubo.lights[i].direction_vs =
+          glm::normalize(mv * light_ubo.lights[i].direction_ws);
+      light_ubo.lights[i].position_vs = mv * light_ubo.lights[i].position_ws;
+    }
+    glBindBuffer(GL_UNIFORM_BUFFER, light_id);
+    GLvoid *p = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+    memcpy(p, &light_ubo, sizeof(LightUBO));
+    glUnmapBuffer(GL_UNIFORM_BUFFER);
 
     switchShader(shader->id, shader_id);
+
+    unsigned int block_index = glGetUniformBlockIndex(shader_id, "data");
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, light_id);
+    glUniformBlockBinding(shader_id, block_index, 0);
+
     updateUniforms(attrib, shader->id);
+
+    bindTexture(attrib.diffuse, GL_TEXTURE0);
+    bindTexture(attrib.specular, GL_TEXTURE0 + 1);
+
     GLenum mode = getGLRenderMode(attrib.state.primitiveMode);
     for (const auto &vao : attrib.vaos) {
       if (vao != nullptr) {

@@ -71,11 +71,16 @@ struct RenderState {
   bool blending = true;
 };
 
+struct LightUBO {
+  struct Light lights[10] = {};
+};
+
 struct Uniforms {
   glm::mat4 view;
   glm::mat4 proj;
   glm::mat4 ortho;
   glm::mat4 view_proj;
+  float time;
 };
 
 struct Attrib {
@@ -110,8 +115,7 @@ class Renderer {
                   glm::vec3 color);
   void renderUI(std::string filename, float pos_x, float pos_y, float scale,
                 bool centered);
-  void bindTexture(Texture* texture, unsigned int& texture_binded,
-                   GLenum tex_slot);
+  void bindTexture(Texture* texture, GLenum tex_slot);
   void update(const Env& env);
   void draw();
   void flushAttribs();
@@ -128,6 +132,8 @@ class Renderer {
   void switchBlendingState(bool state);
 
   Uniforms uniforms;
+  LightUBO light_ubo;
+  GLuint light_id;
 
  private:
   Renderer(void) = default;

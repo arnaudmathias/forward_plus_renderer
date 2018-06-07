@@ -44,8 +44,8 @@ struct Light {
   float spotlight_angle;
   float range;
   float intensity;
-  bool enabled;
-  bool selected;
+  unsigned int enabled;
+  unsigned int selected;
   unsigned int type;
   glm::vec2 padding;
 };

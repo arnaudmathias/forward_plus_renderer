@@ -7,16 +7,15 @@
 
 class Mesh {
  public:
-  Mesh(uint32_t count, int32_t offset, std::string ambient_tex,
-       std::string diffuse_tex, std::string specular_tex,
-       std::string normal_tex);
+  Mesh(uint32_t count, int32_t offset);
   ~Mesh();
   uint32_t indexCount;   // vertices count
   int32_t vertexOffset;  // offset in vertex array
+  Material material;
   std::string ambient_texname;
   std::string diffuse_texname;
   std::string specular_texname;
-  std::string normal_texname;
+  std::string bump_texname;
 
  private:
   Mesh();
