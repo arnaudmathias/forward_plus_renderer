@@ -71,8 +71,9 @@ struct RenderState {
   bool blending = true;
 };
 
-struct LightUBO {
+struct UBO {
   struct Light lights[10] = {};
+  struct Material material = {};
 };
 
 struct Uniforms {
@@ -132,8 +133,8 @@ class Renderer {
   void switchBlendingState(bool state);
 
   Uniforms uniforms;
-  LightUBO light_ubo;
-  GLuint light_id;
+  UBO ubo;
+  GLuint ubo_id;
 
  private:
   Renderer(void) = default;

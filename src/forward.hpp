@@ -21,18 +21,45 @@ struct Material {
   float opacity;
   float specular_power;
   float index_of_refraction;
-  bool has_ambient_texture;
-  bool has_emissive_texture;
-  bool has_diffuse_texture;
-  bool has_specular_texture;
-  bool has_specular_power_texture;
-  bool has_normal_texture;
-  bool has_bump_texture;
-  bool has_opacity_texture;
+  unsigned int has_ambient_texture;
+  unsigned int has_emissive_texture;
+  unsigned int has_diffuse_texture;
+  unsigned int has_specular_texture;
+  unsigned int has_specular_power_texture;
+  unsigned int has_normal_texture;
+  unsigned int has_bump_texture;
+  unsigned int has_opacity_texture;
   float bump_intensity;
-  float specular_Scale;
+  float specular_scale;
   float alpha_threshold;
   glm::vec2 padding;
+  Material() = default;
+  Material(Material const& src) { *this = src; }
+  Material& operator=(Material const& rhs) {
+    if (this != &rhs) {
+      global_ambient = rhs.global_ambient;
+      ambient_color = rhs.ambient_color;
+      emissive_color = rhs.emissive_color;
+      diffuse_color = rhs.diffuse_color;
+      specular_color = rhs.specular_color;
+      reflectance = rhs.specular_color;
+      opacity = rhs.opacity;
+      specular_power = rhs.specular_power;
+      index_of_refraction = rhs.index_of_refraction;
+      has_ambient_texture = rhs.has_ambient_texture;
+      has_emissive_texture = rhs.has_emissive_texture;
+      has_diffuse_texture = rhs.has_diffuse_texture;
+      has_specular_texture = rhs.has_specular_texture;
+      has_specular_power_texture = rhs.has_specular_power_texture;
+      has_normal_texture = rhs.has_normal_texture;
+      has_bump_texture = rhs.has_bump_texture;
+      has_opacity_texture = rhs.has_opacity_texture;
+      bump_intensity = rhs.bump_intensity;
+      specular_scale = rhs.specular_scale;
+      alpha_threshold = rhs.alpha_threshold;
+    }
+    return (*this);
+  }
 };
 
 struct Light {
@@ -48,6 +75,26 @@ struct Light {
   unsigned int selected;
   unsigned int type;
   glm::vec2 padding;
+
+  Light() = default;
+  Light(Light const& src) { *this = src; }
+
+  Light& operator=(Light const& rhs) {
+    if (this != &rhs) {
+      position_ws = rhs.position_ws;
+      direction_ws = rhs.direction_ws;
+      position_vs = rhs.position_vs;
+      direction_vs = rhs.direction_vs;
+      color = rhs.color;
+      spotlight_angle = rhs.spotlight_angle;
+      range = rhs.range;
+      intensity = rhs.intensity;
+      enabled = rhs.enabled;
+      selected = rhs.selected;
+      type = rhs.type;
+    }
+    return (*this);
+  };
 };
 
 struct Vertex {
@@ -55,14 +102,14 @@ struct Vertex {
   glm::vec3 normal = {0, 0, 0};
   glm::vec2 uv = {0, 0};
 
-  Vertex() : position({0.0f, 0.0f, 0.0f}){};
+  Vertex() = default;
   Vertex(Vertex const& src) { *this = src; }
 
   Vertex& operator=(Vertex const& rhs) {
     if (this != &rhs) {
-      this->position = rhs.position;
-      this->normal = rhs.normal;
-      this->uv = rhs.uv;
+      position = rhs.position;
+      normal = rhs.normal;
+      uv = rhs.uv;
     }
     return (*this);
   };

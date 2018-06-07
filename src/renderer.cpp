@@ -4,21 +4,20 @@ namespace render {
 
 Renderer::Renderer(int width, int height) : _width(width), _height(height) {
   for (int i = 0; i < 10; i++) {
-    light_ubo.lights[i].enabled = 1;
-    light_ubo.lights[i].intensity = 1.0f;
-    light_ubo.lights[i].range = 300.0f;
-    light_ubo.lights[i].color = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
-    light_ubo.lights[i].direction_ws =
+    ubo.lights[i].enabled = 1;
+    ubo.lights[i].intensity = 1.0f;
+    ubo.lights[i].range = 300.0f;
+    ubo.lights[i].color = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
+    ubo.lights[i].direction_ws =
         glm::normalize(glm::vec4(0.0f, -1.0f, 0.2f, 0.0f));
-    light_ubo.lights[i].position_ws =
+    ubo.lights[i].position_ws =
         glm::vec4(0.0f, 100.0f + i * 100.0f, 0.0f, 1.0f);
   }
-  light_ubo.lights[0].color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-  light_ubo.lights[0].type = 1;
-  glGenBuffers(1, &light_id);
-  glBindBuffer(GL_UNIFORM_BUFFER, light_id);
-  glBufferData(GL_UNIFORM_BUFFER, sizeof(LightUBO), &light_ubo,
-               GL_DYNAMIC_DRAW);
+  ubo.lights[0].color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+  ubo.lights[0].type = 1;
+  glGenBuffers(1, &ubo_id);
+  glBindBuffer(GL_UNIFORM_BUFFER, ubo_id);
+  glBufferData(GL_UNIFORM_BUFFER, sizeof(UBO), &ubo, GL_DYNAMIC_DRAW);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
@@ -118,19 +117,21 @@ void Renderer::draw() {
 
     glm::mat4 mv = uniforms.view * attrib.model;
     for (int i = 0; i < 10; i++) {
-      light_ubo.lights[i].direction_vs =
-          glm::normalize(mv * light_ubo.lights[i].direction_ws);
-      light_ubo.lights[i].position_vs = mv * light_ubo.lights[i].position_ws;
+      ubo.lights[i].direction_vs =
+          glm::normalize(mv * ubo.lights[i].direction_ws);
+      ubo.lights[i].position_vs = mv * ubo.lights[i].position_ws;
     }
-    glBindBuffer(GL_UNIFORM_BUFFER, light_id);
+    ubo.material = attrib.material;
+
+    glBindBuffer(GL_UNIFORM_BUFFER, ubo_id);
     GLvoid *p = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-    memcpy(p, &light_ubo, sizeof(LightUBO));
+    memcpy(p, &ubo, sizeof(UBO));
     glUnmapBuffer(GL_UNIFORM_BUFFER);
 
     switchShader(shader->id, shader_id);
 
     unsigned int block_index = glGetUniformBlockIndex(shader_id, "data");
-    glBindBufferBase(GL_UNIFORM_BUFFER, 0, light_id);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo_id);
     glUniformBlockBinding(shader_id, block_index, 0);
 
     updateUniforms(attrib, shader->id);

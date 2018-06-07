@@ -9,6 +9,20 @@ Mesh::Mesh(uint32_t count, int32_t offset)
 
 Mesh::~Mesh() {}
 
+Mesh::Mesh(Mesh const& src) { *this = src; }
+Mesh& Mesh::operator=(Mesh const& rhs) {
+  if (this != &rhs) {
+    indexCount = rhs.indexCount;
+    vertexOffset = rhs.indexCount;
+    material = rhs.material;
+    ambient_texname = rhs.ambient_texname;
+    diffuse_texname = rhs.diffuse_texname;
+    specular_texname = rhs.specular_texname;
+    bump_texname = rhs.bump_texname;
+  }
+  return (*this);
+}
+
 Model::Model(const std::string filename) {
   tinyobj::attrib_t attrib;
   std::vector<tinyobj::shape_t> shapes;
@@ -28,6 +42,18 @@ Model::Model(const std::string filename) {
   }
   for (const auto& material : materials) {
     Mesh mesh(0, 0);
+    mesh.material.has_diffuse_texture =
+        material.diffuse_texname.empty() == false ? 1 : 0;
+    mesh.material.has_specular_texture =
+        material.specular_texname.empty() == false ? 1 : 0;
+
+    mesh.material.opacity = 1.0f;
+    mesh.material.specular_power = material.shininess;
+    mesh.material.index_of_refraction = material.ior;
+
+    // std::cout << "mesh.material.specular_power: "
+    //         << mesh.material.specular_power << std::endl;
+
     mesh.ambient_texname = sanitizeFilename(basedir + material.ambient_texname);
     mesh.diffuse_texname = sanitizeFilename(basedir + material.diffuse_texname);
     mesh.specular_texname =

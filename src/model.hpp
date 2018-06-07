@@ -9,6 +9,9 @@ class Mesh {
  public:
   Mesh(uint32_t count, int32_t offset);
   ~Mesh();
+  Mesh(Mesh const& src);
+  Mesh& operator=(Mesh const& rhs);
+
   uint32_t indexCount;   // vertices count
   int32_t vertexOffset;  // offset in vertex array
   Material material;

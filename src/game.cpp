@@ -14,8 +14,8 @@ Game::Game(void) {
     }
     render::Attrib attrib;
     attrib.shader_key = "default";
-    // attrib.model = glm::scale(glm::vec3(0.01f));
     attrib.model = glm::mat4(1.0f);
+    attrib.material = mesh.material;
 
     attrib.diffuse = new Texture(mesh.diffuse_texname);
     attrib.specular = new Texture(mesh.specular_texname);
