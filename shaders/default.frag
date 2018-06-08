@@ -46,11 +46,17 @@ layout (std140, binding = 0) readonly buffer lights_data {
 	Light lights[];
 };
 
+layout(std430, binding = 1) readonly buffer visible_lights_indices {
+	int lights_indices[];
+};
+
 layout (std140, binding = 2) uniform material_data { 
 	Material material;
 };
 
 uniform int num_lights;
+uniform int workgroup_x;
+uniform int debug;
 uniform sampler2D diffuse_tex;
 uniform sampler2D specular_tex;
 
@@ -115,6 +121,18 @@ LightingResult getLighting(vec3 eyePos, vec3 P, vec3 N) {
 }
 
 void main() {
+	ivec2 location = ivec2(gl_FragCoord.xy);
+	ivec2 tileID = location / ivec2(16, 16);
+	uint count = 0;
+	uint index = tileID.y * workgroup_x + tileID.x;
+
+	uint offset = index * 32;
+	for (uint i = 0; i < 32; i++) {
+		if (lights_indices[offset + i] != 0) {
+			count++;
+		}
+	}
+
 	vec4 diffuse = material.diffuse_color;
 	if (material.has_diffuse_texture != 0){
 		vec4 diffuse_color_tex = texture(diffuse_tex, frag_uv);
@@ -135,6 +153,12 @@ void main() {
 		}
 		specular = vec4(specular.rgb * result.specular, 1.0f);
 	}
+	
+	if (debug == 0) {
+		frag_color = vec4(specular.rgb + diffuse.rgb, 1.0);
 
-	frag_color = vec4(specular.rgb + diffuse.rgb, 1.0);
+	} else {
+		float color = float(count) / 32.0;
+		frag_color = vec4(color, color, color, 1.0f);
+	}
 }

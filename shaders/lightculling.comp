@@ -40,6 +40,11 @@ void main() {
 		min_depth = 0xFFFFFFFF;
 		max_depth = 0x0;
 		group_light_count = 0;
+		uint index = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
+		uint offset = index * MAX_LIGHTS_PER_TILE;
+		for (uint i = 0; i < MAX_LIGHTS_PER_TILE; i++) {
+			lights_indices[offset + i] = 0;
+		}
 	}
 	barrier();
 

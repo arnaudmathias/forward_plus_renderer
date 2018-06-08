@@ -79,10 +79,6 @@ struct LightSSBO {
   struct Light lights[NUM_LIGHTS] = {};
 };
 
-struct VisibleLightSSBO {
-  int visible_lights_indices[81892] = {};
-};
-
 struct Uniforms {
   glm::mat4 view;
   glm::mat4 proj;
@@ -90,6 +86,7 @@ struct Uniforms {
   glm::mat4 view_proj;
   glm::ivec2 screen_size;
   float time;
+  int debug = 0;
 };
 
 struct Attrib {
@@ -147,7 +144,6 @@ class Renderer {
   LightSSBO lights_data;
   GLuint ssbo_lights;
 
-  VisibleLightSSBO visible_lights_data;
   GLuint ssbo_visible_lights;
 
   GLuint depthmap_fbo;
@@ -176,6 +172,9 @@ static inline void setUniform(const GLint& location, const float& data) {
 }
 static inline void setUniform(const GLint& location, const int& data) {
   glUniform1i(location, data);
+}
+static inline void setUniform(const GLint& location, const unsigned int& data) {
+  glUniform1ui(location, data);
 }
 static inline void setUniform(const GLint& location, const glm::vec2& data) {
   glUniform2fv(location, 1, static_cast<const GLfloat*>(glm::value_ptr(data)));

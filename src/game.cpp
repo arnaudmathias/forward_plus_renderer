@@ -54,6 +54,7 @@ void Game::render(const Env& env, render::Renderer& renderer) {
   renderer.uniforms.time = env.getAbsoluteTime();
   renderer.uniforms.screen_size =
       glm::ivec2(renderer.getScreenWidth(), renderer.getScreenHeight());
+  renderer.uniforms.debug = _debugMode ? 1 : 0;
 
   for (const auto& attrib : attribs) {
     renderer.addAttrib(attrib);

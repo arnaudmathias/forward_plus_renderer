@@ -36,11 +36,15 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_lights);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
+  GLuint workgroup_x = (_width + (_width % TILE_SIZE)) / TILE_SIZE;
+  GLuint workgroup_y = (_height + (_height % TILE_SIZE)) / TILE_SIZE;
   // Visible light indices SSBO
+  // TODO: Handle resizing
   glGenBuffers(1, &ssbo_visible_lights);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_visible_lights);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(VisibleLightSSBO),
-               &visible_lights_data, GL_DYNAMIC_DRAW);
+  glBufferData(GL_SHADER_STORAGE_BUFFER,
+               sizeof(int) * workgroup_x * workgroup_y * 32, NULL,
+               GL_DYNAMIC_DRAW);
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_visible_lights);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
@@ -113,12 +117,13 @@ void Renderer::addAttrib(const Attrib &attrib) {
 void Renderer::switchShader(GLuint shader_id, int &current_shader_id) {
   if (shader_id > 0 && shader_id != current_shader_id) {
     glUseProgram(shader_id);
-    setUniform(glGetUniformLocation(shader_id, "P"), this->uniforms.proj);
-    setUniform(glGetUniformLocation(shader_id, "V"), this->uniforms.view);
-    setUniform(glGetUniformLocation(shader_id, "VP"), this->uniforms.view_proj);
+    setUniform(glGetUniformLocation(shader_id, "P"), uniforms.proj);
+    setUniform(glGetUniformLocation(shader_id, "V"), uniforms.view);
+    setUniform(glGetUniformLocation(shader_id, "VP"), uniforms.view_proj);
     setUniform(glGetUniformLocation(shader_id, "num_lights"), NUM_LIGHTS);
     setUniform(glGetUniformLocation(shader_id, "screen_size"),
-               this->uniforms.screen_size);
+               uniforms.screen_size);
+    setUniform(glGetUniformLocation(shader_id, "debug"), uniforms.debug);
     current_shader_id = shader_id;
   }
 }
@@ -181,6 +186,8 @@ void Renderer::draw() {
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
   switchShader(default->id, current_shader_id);
+  setUniform(glGetUniformLocation(default->id, "workgroup_x"),
+             static_cast<int>(workgroup_x));
   for (const auto &attrib : this->_attribs) {
     setState(attrib.state);
 
@@ -195,6 +202,9 @@ void Renderer::draw() {
         default->id, glGetUniformBlockIndex(default->id, "lights_data"), 0);
     glUniformBlockBinding(
         default->id, glGetUniformBlockIndex(default->id, "material_data"), 2);*/
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_lights);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_visible_lights);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 2, ubo_id);
 
     updateUniforms(attrib, default->id);
 
