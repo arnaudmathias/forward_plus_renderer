@@ -72,8 +72,15 @@ struct RenderState {
 };
 
 struct UBO {
-  struct Light lights[10] = {};
   struct Material material = {};
+};
+
+struct LightSSBO {
+  struct Light lights[NUM_LIGHTS] = {};
+};
+
+struct VisibleLightSSBO {
+  int visible_lights_indices[81892] = {};
 };
 
 struct Uniforms {
@@ -81,6 +88,7 @@ struct Uniforms {
   glm::mat4 proj;
   glm::mat4 ortho;
   glm::mat4 view_proj;
+  glm::ivec2 screen_size;
   float time;
 };
 
@@ -135,6 +143,12 @@ class Renderer {
   Uniforms uniforms;
   UBO ubo;
   GLuint ubo_id;
+
+  LightSSBO lights_data;
+  GLuint ssbo_lights;
+
+  VisibleLightSSBO visible_lights_data;
+  GLuint ssbo_visible_lights;
 
   GLuint depthmap_fbo;
   GLuint depthmap_id;

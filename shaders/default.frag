@@ -1,8 +1,4 @@
 #version 450 core
-#define NUM_LIGHTS 10
-#define POINT_LIGHT 0
-#define DIRECTIONAL_LIGHT 1
-#define SPOT_LIGHT 2 
 
 in vec3 vs_pos;
 in vec3 vs_normal;
@@ -35,40 +31,36 @@ struct Material {
 };
 
 struct Light {
-	vec4 position_ws;
-	vec4 direction_ws;
-	vec4 position_vs;
-	vec4 direction_vs;
-	vec4 color;
-	float spotlight_angle;
-	float range;
+	vec3 position;
+	float radius;
+	vec3 color;
 	float intensity;
-	uint enabled;
-	uint selected;
-	uint type;
-	vec2 padding;
 };
 
 struct LightingResult {
-	vec4 diffuse;
-	vec4 specular;
+	vec3 diffuse;
+	vec3 specular;
 };
 
-layout (std140, binding = 0) uniform data { 
-	Light lights[NUM_LIGHTS];
+layout (std140, binding = 0) readonly buffer lights_data { 
+	Light lights[];
+};
+
+layout (std140, binding = 2) uniform material_data { 
 	Material material;
 };
 
+uniform int num_lights;
 uniform sampler2D diffuse_tex;
 uniform sampler2D specular_tex;
 
-vec4 getDiffuse(Light light, vec4 L, vec4 N) {
+vec3 getDiffuse(Light light, vec3 L, vec3 N) {
 	float NdotL = max(dot(N, L), 0.0f);
 	return light.color * NdotL;
 }
 
-vec4 getSpecular(Light light, vec4 V, vec4 L, vec4 N){
-	vec4 R = normalize(reflect(-L, N));
+vec3 getSpecular(Light light, vec3 V, vec3 L, vec3 N){
+	vec3 R = normalize(reflect(-L, N));
 	float RdotV = max(dot(R, V), 0);
 
 	return light.color * pow(RdotV, material.specular_power);
@@ -76,10 +68,10 @@ vec4 getSpecular(Light light, vec4 V, vec4 L, vec4 N){
 }
 
 float getAttenuation(Light light, float d){
-	return 1.0f - smoothstep(light.range * 0.75f, light.range, d);
+	return 1.0f - smoothstep(light.radius * 0.75f, light.radius, d);
 }
 
-LightingResult directionalLight(Light light, vec4 V, vec4 P, vec4 N) {
+/*LightingResult directionalLight(Light light, vec4 V, vec4 P, vec4 N) {
 	LightingResult result;
 
 	vec4 L = normalize(-light.direction_vs);
@@ -88,12 +80,12 @@ LightingResult directionalLight(Light light, vec4 V, vec4 P, vec4 N) {
 	result.specular = getSpecular(light, V, L, N) * light.intensity;
 
 	return result;
-}
+}*/
 
-LightingResult pointLight(Light light, vec4 V, vec4 P, vec4 N) {
+LightingResult pointLight(Light light, vec3 V, vec3 P, vec3 N) {
 	LightingResult result;
 
-	vec4 L = light.position_vs - P;
+	vec3 L = light.position - P;
 	float distance = length(L);
 	L = L / distance;
 
@@ -105,33 +97,17 @@ LightingResult pointLight(Light light, vec4 V, vec4 P, vec4 N) {
 	return result;
 }
 
-LightingResult getLighting(vec4 eyePos, vec4 P, vec4 N) {
-	vec4 V = normalize(eyePos - P);
+LightingResult getLighting(vec3 eyePos, vec3 P, vec3 N) {
+	vec3 V = normalize(eyePos - P);
 
 	LightingResult totalResult;
-	totalResult.diffuse = vec4(0.0f);
-	totalResult.specular = vec4(0.0f);
+	totalResult.diffuse = vec3(0.0f);
+	totalResult.specular = vec3(0.0f);
 
-	for (int i = 0; i < 10; i++){
+	for (int i = 0; i < num_lights; i++){
 		LightingResult result;
-
-		if (lights[i].enabled == 0)
-			continue;
-		if (lights[i].type != DIRECTIONAL_LIGHT &&
-				length(lights[i].position_vs - P) > lights[i].range) continue;
-
-		switch (lights[i].type) {
-			case DIRECTIONAL_LIGHT:
-				{
-					result = directionalLight(lights[i], V, P, N);
-				}
-				break;
-			case POINT_LIGHT:
-				{
-					result = pointLight(lights[i], V, P, N);
-				}
-				break;
-		}
+		//result = directionalLight(lights[i], V, P, N);
+		result = pointLight(lights[i], V, P, N);
 		totalResult.diffuse += result.diffuse;
 		totalResult.specular += result.specular;
 	}
@@ -148,7 +124,7 @@ void main() {
 	float alpha = diffuse.a;
 
 	LightingResult result;
-	result = getLighting(vec4(0.0f, 0.0f, 0.0f, 1.0f), vec4(vs_pos, 1.0f), normalize(vec4(vs_normal, 0.0f))); 
+	result = getLighting(vec3(0.0f, 0.0f, 0.0f), vs_pos, normalize(vs_normal)); 
 
 	vec4 specular = vec4(0.0);
 	if (material.specular_power > 1.0) {
@@ -157,7 +133,7 @@ void main() {
 			vec4 specular_color_tex = texture(specular_tex, frag_uv);
 			specular = specular_color_tex;
 		}
-		specular *= result.specular;
+		specular = vec4(specular.rgb * result.specular, 1.0f);
 	}
 
 	frag_color = vec4(specular.rgb + diffuse.rgb, 1.0);

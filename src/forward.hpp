@@ -1,4 +1,6 @@
 #pragma once
+#define TILE_SIZE 16
+#define NUM_LIGHTS 10
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -12,27 +14,27 @@
 #include <iostream>
 
 struct Material {
-  glm::vec4 global_ambient;
-  glm::vec4 ambient_color;
-  glm::vec4 emissive_color;
-  glm::vec4 diffuse_color;
-  glm::vec4 specular_color;
-  glm::vec4 reflectance;
-  float opacity;
-  float specular_power;
-  float index_of_refraction;
-  unsigned int has_ambient_texture;
-  unsigned int has_emissive_texture;
-  unsigned int has_diffuse_texture;
-  unsigned int has_specular_texture;
-  unsigned int has_specular_power_texture;
-  unsigned int has_normal_texture;
-  unsigned int has_bump_texture;
-  unsigned int has_opacity_texture;
-  float bump_intensity;
-  float specular_scale;
-  float alpha_threshold;
-  glm::vec2 padding;
+  glm::vec4 global_ambient = {};
+  glm::vec4 ambient_color = {};
+  glm::vec4 emissive_color = {};
+  glm::vec4 diffuse_color = {};
+  glm::vec4 specular_color = {};
+  glm::vec4 reflectance = {};
+  float opacity = 1.0f;
+  float specular_power = 1.0f;
+  float index_of_refraction = 1.0f;
+  unsigned int has_ambient_texture = 0;
+  unsigned int has_emissive_texture = 0;
+  unsigned int has_diffuse_texture = 0;
+  unsigned int has_specular_texture = 0;
+  unsigned int has_specular_power_texture = 0;
+  unsigned int has_normal_texture = 0;
+  unsigned int has_bump_texture = 0;
+  unsigned int has_opacity_texture = 0;
+  float bump_intensity = 1.0f;
+  float specular_scale = 1.0f;
+  float alpha_threshold = 0.8f;
+  glm::vec2 padding = {};
   Material() = default;
   Material(Material const& src) { *this = src; }
   Material& operator=(Material const& rhs) {
@@ -63,35 +65,20 @@ struct Material {
 };
 
 struct Light {
-  glm::vec4 position_ws;
-  glm::vec4 direction_ws;
-  glm::vec4 position_vs;
-  glm::vec4 direction_vs;
-  glm::vec4 color;
-  float spotlight_angle;
-  float range;
-  float intensity;
-  unsigned int enabled;
-  unsigned int selected;
-  unsigned int type;
-  glm::vec2 padding;
+  glm::vec3 position = {};
+  float radius = 1.0f;
+  glm::vec3 color = {};
+  float intensity = 1.0f;
 
   Light() = default;
   Light(Light const& src) { *this = src; }
 
   Light& operator=(Light const& rhs) {
     if (this != &rhs) {
-      position_ws = rhs.position_ws;
-      direction_ws = rhs.direction_ws;
-      position_vs = rhs.position_vs;
-      direction_vs = rhs.direction_vs;
+      position = rhs.position;
+      radius = rhs.radius;
       color = rhs.color;
-      spotlight_angle = rhs.spotlight_angle;
-      range = rhs.range;
       intensity = rhs.intensity;
-      enabled = rhs.enabled;
-      selected = rhs.selected;
-      type = rhs.type;
     }
     return (*this);
   };

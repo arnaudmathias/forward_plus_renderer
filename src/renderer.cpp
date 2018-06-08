@@ -4,20 +4,12 @@ namespace render {
 
 Renderer::Renderer(int width, int height) : _width(width), _height(height) {
   for (int i = 0; i < 10; i++) {
-    ubo.lights[i].enabled = 1;
-    ubo.lights[i].intensity = 1.0f;
-    ubo.lights[i].range = 3.0f;
-    ubo.lights[i].color = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
-    ubo.lights[i].direction_ws =
-        glm::normalize(glm::vec4(0.0f, -1.0f, 0.2f, 0.0f));
-    ubo.lights[i].position_ws = glm::vec4(0.0f, 0.0f + i * 10.0f, 0.0f, 1.0f);
+    lights_data.lights[i].position =
+        glm::vec4(0.0f, 0.0f + i * 10.0f, 0.0f, 1.0f);
+    lights_data.lights[i].radius = 3.0f;
+    lights_data.lights[i].color = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
+    lights_data.lights[i].intensity = 1.0f;
   }
-  ubo.lights[0].color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-  ubo.lights[0].type = 1;
-  glGenBuffers(1, &ubo_id);
-  glBindBuffer(GL_UNIFORM_BUFFER, ubo_id);
-  glBufferData(GL_UNIFORM_BUFFER, sizeof(UBO), &ubo, GL_DYNAMIC_DRAW);
-  glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
   // Gen and setup our depth map FBO for the depth prepass
   glGenFramebuffers(1, &depthmap_fbo);
@@ -35,6 +27,29 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
                          depthmap_id, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  // Lights SSBO
+  glGenBuffers(1, &ssbo_lights);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_lights);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(LightSSBO), &lights_data,
+               GL_DYNAMIC_DRAW);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_lights);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+  // Visible light indices SSBO
+  glGenBuffers(1, &ssbo_visible_lights);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_visible_lights);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(VisibleLightSSBO),
+               &visible_lights_data, GL_DYNAMIC_DRAW);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_visible_lights);
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+  // Material UBO
+  glGenBuffers(1, &ubo_id);
+  glBindBuffer(GL_UNIFORM_BUFFER, ubo_id);
+  glBufferData(GL_UNIFORM_BUFFER, sizeof(UBO), &ubo, GL_DYNAMIC_DRAW);
+  glBindBufferBase(GL_UNIFORM_BUFFER, 2, ubo_id);
+  glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 Renderer::Renderer(Renderer const &src) { *this = src; }
@@ -100,6 +115,10 @@ void Renderer::switchShader(GLuint shader_id, int &current_shader_id) {
     glUseProgram(shader_id);
     setUniform(glGetUniformLocation(shader_id, "P"), this->uniforms.proj);
     setUniform(glGetUniformLocation(shader_id, "V"), this->uniforms.view);
+    setUniform(glGetUniformLocation(shader_id, "VP"), this->uniforms.view_proj);
+    setUniform(glGetUniformLocation(shader_id, "num_lights"), NUM_LIGHTS);
+    setUniform(glGetUniformLocation(shader_id, "screen_size"),
+               this->uniforms.screen_size);
     current_shader_id = shader_id;
   }
 }
@@ -126,7 +145,7 @@ void Renderer::draw() {
 
   glViewport(0, 0, _width, _height);
 
-  // Depth prepass :
+  // Depth prepass
   // Bind the framebuffer and render scene geometry
   glBindFramebuffer(GL_FRAMEBUFFER, depthmap_fbo);
   glClear(GL_DEPTH_BUFFER_BIT);
@@ -140,27 +159,42 @@ void Renderer::draw() {
   }
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_lights);
+  GLvoid *lights_ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
+  memcpy(lights_ptr, &lights_data, sizeof(LightSSBO));
+  glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+
+  // Light culling computing pass
+  GLuint workgroup_x = (_width + (_width % TILE_SIZE)) / TILE_SIZE;
+  GLuint workgroup_y = (_height + (_height % TILE_SIZE)) / TILE_SIZE;
+
+  switchShader(lightculling->id, current_shader_id);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_lights);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_visible_lights);
+
+  glActiveTexture(GL_TEXTURE0);
+  setUniform(glGetUniformLocation(lightculling->id, "depthmap"), 0);
+  glBindTexture(GL_TEXTURE_2D, depthmap_id);
+
+  glDispatchCompute(workgroup_x, workgroup_y, 1);
+  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+  switchShader(default->id, current_shader_id);
   for (const auto &attrib : this->_attribs) {
     setState(attrib.state);
 
-    glm::mat4 mv = uniforms.view * attrib.model;
-    for (int i = 0; i < 10; i++) {
-      ubo.lights[i].direction_vs =
-          glm::normalize(mv * ubo.lights[i].direction_ws);
-      ubo.lights[i].position_vs = mv * ubo.lights[i].position_ws;
-    }
     ubo.material = attrib.material;
 
     glBindBuffer(GL_UNIFORM_BUFFER, ubo_id);
-    GLvoid *p = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-    memcpy(p, &ubo, sizeof(UBO));
+    GLvoid *ubo_ptr = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+    memcpy(ubo_ptr, &ubo, sizeof(UBO));
     glUnmapBuffer(GL_UNIFORM_BUFFER);
 
-    switchShader(default->id, current_shader_id);
-
-    unsigned int block_index = glGetUniformBlockIndex(default->id, "data");
-    glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo_id);
-    glUniformBlockBinding(default->id, block_index, 0);
+    /*glUniformBlockBinding(
+        default->id, glGetUniformBlockIndex(default->id, "lights_data"), 0);
+    glUniformBlockBinding(
+        default->id, glGetUniformBlockIndex(default->id, "material_data"), 2);*/
 
     updateUniforms(attrib, default->id);
 
