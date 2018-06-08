@@ -6,8 +6,8 @@ Camera::Camera(glm::vec3 position, glm::vec3 targetPosition, int width,
       width(width),
       height(height),
       mouseInit(false),
-      zNear(0.1f),
-      zFar(10000.0f),
+      zNear(0.5f),
+      zFar(50.0f),
       mouseMoved(false),
       speed(5.0f) {
   proj = glm::perspective(
@@ -21,8 +21,8 @@ Camera::Camera(glm::vec3 position, glm::vec3 targetPosition, int width,
 
 void Camera::updateMatrix(float deltaTime) {
   if (mouseMoved) {
-    horAngle += 0.5f * deltaTime * (oldMouseXpos - mouseXpos);
-    verAngle += 0.5f * deltaTime * (oldMouseYpos - mouseYpos);
+    horAngle += 0.2f * deltaTime * (oldMouseXpos - mouseXpos);
+    verAngle += 0.2f * deltaTime * (oldMouseYpos - mouseYpos);
     verAngle = glm::clamp(verAngle, -1.5f, 1.5f);
     mouseMoved = false;
   }
@@ -52,9 +52,9 @@ void Camera::update(Env &env, float deltaTime) {
   }
   if (env.inputHandler.keybrDisabled == false) {
     if (env.inputHandler.keys[GLFW_KEY_LEFT_SHIFT]) {
-      speed = 500.0f;
+      speed = 20.0f;
     } else {
-      speed = 200.0f;
+      speed = 5.0f;
     }
     if (env.inputHandler.keys[GLFW_KEY_UP] ||
         env.inputHandler.keys[GLFW_KEY_W]) {

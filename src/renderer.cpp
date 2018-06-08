@@ -6,12 +6,11 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
   for (int i = 0; i < 10; i++) {
     ubo.lights[i].enabled = 1;
     ubo.lights[i].intensity = 1.0f;
-    ubo.lights[i].range = 300.0f;
+    ubo.lights[i].range = 3.0f;
     ubo.lights[i].color = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
     ubo.lights[i].direction_ws =
         glm::normalize(glm::vec4(0.0f, -1.0f, 0.2f, 0.0f));
-    ubo.lights[i].position_ws =
-        glm::vec4(0.0f, 100.0f + i * 100.0f, 0.0f, 1.0f);
+    ubo.lights[i].position_ws = glm::vec4(0.0f, 0.0f + i * 10.0f, 0.0f, 1.0f);
   }
   ubo.lights[0].color = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
   ubo.lights[0].type = 1;
@@ -19,6 +18,23 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
   glBindBuffer(GL_UNIFORM_BUFFER, ubo_id);
   glBufferData(GL_UNIFORM_BUFFER, sizeof(UBO), &ubo, GL_DYNAMIC_DRAW);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+  // Gen and setup our depth map FBO for the depth prepass
+  glGenFramebuffers(1, &depthmap_fbo);
+
+  glGenTextures(1, &depthmap_id);
+  glBindTexture(GL_TEXTURE_2D, depthmap_id);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _width, _height, 0,
+               GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, depthmap_fbo);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+                         depthmap_id, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 Renderer::Renderer(Renderer const &src) { *this = src; }
@@ -102,17 +118,26 @@ void Renderer::updateUniforms(const Attrib &attrib, const int shader_id) {
 
 void Renderer::draw() {
   RenderState backup_state = _state;
-  // std::sort(_renderAttribs.begin(), _renderAttribs.end());
   int shader_id = -1;
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  Shader *depthprepass = _shaderCache.getShader("depthprepass");
+  Shader *default = _shaderCache.getShader("default");
+
   glViewport(0, 0, _width, _height);
+
+  // Depth prepass :
+  // Bind the framebuffer and render scene geometry
+  glBindFramebuffer(GL_FRAMEBUFFER, depthmap_fbo);
+  glClear(GL_DEPTH_BUFFER_BIT);
 
   switchDepthTestState(true);
   for (const auto &attrib : this->_attribs) {
-    Shader *shader = _shaderCache.getShader(attrib.shader_key);
-    if (shader == nullptr) {
-      continue;
-    }
+    setState(attrib.state);
+    drawVAOs(attrib.vaos, attrib.state.primitiveMode);
+  }
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  for (const auto &attrib : this->_attribs) {
     setState(attrib.state);
 
     glm::mat4 mv = uniforms.view * attrib.model;
@@ -128,33 +153,38 @@ void Renderer::draw() {
     memcpy(p, &ubo, sizeof(UBO));
     glUnmapBuffer(GL_UNIFORM_BUFFER);
 
-    switchShader(shader->id, shader_id);
+    switchShader(default->id, shader_id);
 
     unsigned int block_index = glGetUniformBlockIndex(shader_id, "data");
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo_id);
     glUniformBlockBinding(shader_id, block_index, 0);
 
-    updateUniforms(attrib, shader->id);
+    updateUniforms(attrib, default->id);
 
     bindTexture(attrib.diffuse, GL_TEXTURE0);
     bindTexture(attrib.specular, GL_TEXTURE0 + 1);
 
-    GLenum mode = getGLRenderMode(attrib.state.primitiveMode);
-    for (const auto &vao : attrib.vaos) {
-      if (vao != nullptr) {
-        if (vao->indices_size != 0) {
-          glBindVertexArray(vao->vao);
-          glDrawElements(mode, vao->indices_size, GL_UNSIGNED_INT, 0);
-        } else if (vao->vertices_size != 0) {
-          glBindVertexArray(vao->vao);
-          glDrawArrays(mode, 0, vao->vertices_size);
-        }
-      }
-    }
+    drawVAOs(attrib.vaos, attrib.state.primitiveMode);
   }
 
   setState(_state);
   glBindVertexArray(0);
+}
+
+void Renderer::drawVAOs(const std::vector<VAO *> &vaos,
+                        render::PrimitiveMode primitive_mode) {
+  GLenum mode = getGLRenderMode(primitive_mode);
+  for (const auto &vao : vaos) {
+    if (vao != nullptr) {
+      if (vao->indices_size != 0) {
+        glBindVertexArray(vao->vao);
+        glDrawElements(mode, vao->indices_size, GL_UNSIGNED_INT, 0);
+      } else if (vao->vertices_size != 0) {
+        glBindVertexArray(vao->vao);
+        glDrawArrays(mode, 0, vao->vertices_size);
+      }
+    }
+  }
 }
 
 void Renderer::update(const Env &env) {

@@ -7,10 +7,6 @@
 #include <vector>
 #include "env.hpp"
 
-class Texture2D;
-class Texture2DContainer;
-class TextureCache;
-
 struct Texture {
   Texture(int width, int height);                             // RenderBuffer
   Texture(std::string filename);                              // Basic texture

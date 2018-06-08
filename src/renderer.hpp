@@ -136,6 +136,9 @@ class Renderer {
   UBO ubo;
   GLuint ubo_id;
 
+  GLuint depthmap_fbo;
+  GLuint depthmap_id;
+
  private:
   Renderer(void) = default;
   std::vector<Attrib> _attribs;
@@ -148,6 +151,7 @@ class Renderer {
   TextRenderer _textRenderer;
   UiRenderer _uiRenderer;
 
+  void drawVAOs(const std::vector<VAO*>& vaos, PrimitiveMode primitive_mode);
   void switchShader(GLuint shader_id, int& current_shader_id);
   void updateUniforms(const Attrib& attrib, const int shader_id);
   GLenum getGLRenderMode(enum PrimitiveMode mode);

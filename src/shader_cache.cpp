@@ -2,6 +2,7 @@
 
 ShaderCache::ShaderCache(void) {
   _shaders.emplace("default", new Shader("shaders/default"));
+  _shaders.emplace("depthprepass", new Shader("shaders/depthprepass"));
   _shaders.emplace("text", new Shader("shaders/text"));
 }
 
