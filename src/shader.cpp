@@ -15,12 +15,13 @@ Shader &Shader::operator=(Shader const &rhs) {
 }
 
 Shader::Shader(std::string shader) : id(-1) {
-  std::array<GLuint, 3> shader_ids;
+  std::array<GLuint, 4> shader_ids;
   GLint err = -1;
   _shaders[0].filename = shader + shader_extensions[0];
   _shaders[1].filename = shader + shader_extensions[1];
   _shaders[2].filename = shader + shader_extensions[2];
-  for (int i = 0; i < 3; i++) {
+  _shaders[3].filename = shader + shader_extensions[3];
+  for (int i = 0; i < 4; i++) {
     shader_ids[i] = loadShader(_shaders[i].filename);
     _shaders[i].last_modification =
         getLastModificationTime(_shaders[i].filename);
@@ -42,7 +43,7 @@ GLuint Shader::loadShader(std::string &shader_filename) {
     shader_filename = "";
     return (0);
   }
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 4; i++) {
     if (shader_filename.find(shader_extensions[i]) != std::string::npos) {
       shader_type = shader_types[i];
     }
@@ -52,7 +53,7 @@ GLuint Shader::loadShader(std::string &shader_filename) {
   return (shader_id);
 }
 
-GLuint Shader::linkShaders(const std::array<GLuint, 3> shader_ids) {
+GLuint Shader::linkShaders(const std::array<GLuint, 4> shader_ids) {
   GLuint program_id = glCreateProgram();
 
   for (int i = 0; i < shader_ids.size(); i++) {
@@ -107,7 +108,7 @@ void Shader::use() const { glUseProgram(this->id); }
 void Shader::reload() {
   GLint err = -1;
   bool need_reload = false;
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 4; i++) {
     if (_shaders[i].filename.empty() == false &&
         _shaders[i].last_modification != -1) {
       std::time_t last_mod = getLastModificationTime(_shaders[i].filename);
@@ -117,8 +118,8 @@ void Shader::reload() {
     }
   }
   if (need_reload) {
-    std::array<GLuint, 3> shader_ids;
-    for (int i = 0; i < 3; i++) {
+    std::array<GLuint, 4> shader_ids;
+    for (int i = 0; i < 4; i++) {
       shader_ids[i] = loadShader(_shaders[i].filename);
       _shaders[i].last_modification =
           getLastModificationTime(_shaders[i].filename);
@@ -129,8 +130,8 @@ void Shader::reload() {
     glGetProgramiv(id, GL_LINK_STATUS, &err);
     if (GL_TRUE != err) {
       std::cerr << "Link error: (" << _shaders[0].filename << ", "
-                << _shaders[1].filename << ", " << _shaders[2].filename
-                << ")\n";
+                << _shaders[1].filename << ", " << _shaders[2].filename << ","
+                << _shaders[3].filename << ")\n";
       printLinkError(id);
     }
   }

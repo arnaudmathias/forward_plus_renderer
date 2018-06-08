@@ -118,9 +118,10 @@ void Renderer::updateUniforms(const Attrib &attrib, const int shader_id) {
 
 void Renderer::draw() {
   RenderState backup_state = _state;
-  int shader_id = -1;
+  int current_shader_id = -1;
 
   Shader *depthprepass = _shaderCache.getShader("depthprepass");
+  Shader *lightculling = _shaderCache.getShader("lightculling");
   Shader *default = _shaderCache.getShader("default");
 
   glViewport(0, 0, _width, _height);
@@ -131,8 +132,10 @@ void Renderer::draw() {
   glClear(GL_DEPTH_BUFFER_BIT);
 
   switchDepthTestState(true);
+  switchShader(depthprepass->id, current_shader_id);
   for (const auto &attrib : this->_attribs) {
     setState(attrib.state);
+    updateUniforms(attrib, depthprepass->id);
     drawVAOs(attrib.vaos, attrib.state.primitiveMode);
   }
 
@@ -153,11 +156,11 @@ void Renderer::draw() {
     memcpy(p, &ubo, sizeof(UBO));
     glUnmapBuffer(GL_UNIFORM_BUFFER);
 
-    switchShader(default->id, shader_id);
+    switchShader(default->id, current_shader_id);
 
-    unsigned int block_index = glGetUniformBlockIndex(shader_id, "data");
+    unsigned int block_index = glGetUniformBlockIndex(default->id, "data");
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo_id);
-    glUniformBlockBinding(shader_id, block_index, 0);
+    glUniformBlockBinding(default->id, block_index, 0);
 
     updateUniforms(attrib, default->id);
 
