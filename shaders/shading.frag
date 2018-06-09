@@ -94,14 +94,6 @@ void main() {
     ivec2 tileID = location / ivec2(16, 16);
     uint index = tileID.y * workgroup_x + tileID.x;
 
-    uint count;
-    uint offset = index * 32;
-    for (uint i = 0; i < 32; i++) {
-	if (lights_indices[offset + i] != 0) {
-	    count++;
-	}
-    }
-
     vec4 diffuse = material.diffuse_color;
     if (material.has_diffuse_texture != 0){
 	vec4 diffuse_color_tex = texture(diffuse_tex, vs_in.frag_uv);
@@ -113,11 +105,6 @@ void main() {
 
     vec3 normal = texture(bump_tex, vs_in.frag_uv).rgb;
     normal = normalize(normal * 2.0 - 1.0);
-
-    //diffuse *= vec4(result.diffuse.rgb, 1.0f);
-    //diffuse = vec4(result.diffuse.rgb, 1.0f);
-
-    vec3 acc_diffuse = vec3(0.0, 0.0, 0.0);
 
     vec3 ts_view_dir = normalize(vs_in.ts_view_pos - vs_in.ts_frag_pos);
 
@@ -133,24 +120,21 @@ void main() {
 	float specular = get_specular(ts_light_dir, ts_view_dir, normal) * attenuation;
 
 	out_color += vec4((diff * diffuse.rgb) + (lights[i].color.rgb * specular), 0.0);
-	
     }
 
-    /*vec3 ts_light_pos = vs_in.TBN * vec3(0.0, 1.0, 0.0);
-    vec3 ts_light_dir = normalize(ts_light_pos - vs_in.ts_frag_pos);
-    float light_radius = 10.0f;
-    vec3 light_color = vec3(1.0, 1.0, 1.0);
-    float dist = length(ts_light_pos - vs_in.ts_frag_pos);
-
-    float attenuation = get_attenuation(light_radius, dist);
-    float diff = get_diffuse(ts_light_dir, normal) * attenuation;
-    float specular = get_specular(ts_light_dir, ts_view_dir, normal) * attenuation;
-*/
     if (debug == 0) {
+	if (alpha < 0.3) {
+	    discard;
+	}
 	frag_color = out_color;
-	//frag_color = vec4(ambient + (light_color * diff) * diffuse.rgb +(vec3(1.0, 1.0, 1.0) * specular) * 0.3, 1.0);
-	//frag_color = vec4(specular.rgb + diffuse.rgb, 1.0);
     } else {
+	uint count;
+	uint offset = index * 32;
+	for (uint i = 0; i < 32; i++) {
+	    if (lights_indices[offset + i] != 0) {
+		count++;
+	    }
+	}
 	float color = float(count) / 32.0;
 	frag_color = vec4(color, color, color, 1.0f);
     }

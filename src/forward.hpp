@@ -1,6 +1,6 @@
 #pragma once
 #define TILE_SIZE 16
-#define NUM_LIGHTS 3
+#define NUM_LIGHTS 10
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>

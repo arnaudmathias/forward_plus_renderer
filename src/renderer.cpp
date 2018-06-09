@@ -4,9 +4,9 @@ namespace render {
 
 Renderer::Renderer(int width, int height) : _width(width), _height(height) {
   for (int i = 0; i < NUM_LIGHTS; i++) {
-    lights_data.lights[i].position = glm::vec3(0.0f, 1.0f, 0.0f);
-    lights_data.lights[i].radius = 10.0f;
-    lights_data.lights[i].color = glm::vec3(1.0f, 1.0f, 0.0f);
+    lights_data.lights[i].position = glm::vec3(-10.0 + i * 2.0, 1.0f, 0.0f);
+    lights_data.lights[i].radius = 1.5f;
+    lights_data.lights[i].color = glm::vec3(1.0f, 0.0f, 0.0f);
     lights_data.lights[i].intensity = 1.0f;
   }
 
