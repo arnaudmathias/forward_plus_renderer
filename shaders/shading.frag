@@ -10,26 +10,24 @@ in VS_OUT {
 out vec4 frag_color;
 
 struct Material {
-    vec4 global_ambient;
-    vec4 ambient_color;
-    vec4 emissive_color;
-    vec4 diffuse_color;
-    vec4 specular_color;
-    vec4 reflectance;
-    float opacity;
+    vec4 ambient;
+    vec4 diffuse;
+    vec4 specular;
+    vec4 transmittance;
+    vec4 emission;
+
     float specular_power;
     float index_of_refraction;
-    uint has_ambient_texture;
-    uint has_emissive_texture;
-    uint has_diffuse_texture;
-    uint has_specular_texture;
-    uint has_specular_power_texture;
-    uint has_normal_texture;
-    uint has_bump_texture;
-    uint has_opacity_texture;
-    float bump_intensity;
-    float specular_Scale;
-    float alpha_threshold;
+    float opacity;
+
+    float roughness;
+    float metallic;
+    float sheen;
+    float clearcoat_thickness;
+    float clearcoat_roughness;
+    float anisotropy;
+    float anisotropy_rotation;
+
     vec2 padding;
 };
 
@@ -83,7 +81,7 @@ float get_attenuation(float light_radius, float dist) {
     float cutoff = 0.3;
     float denom = dist / light_radius + 1.0;
     float attenuation = 1.0 / (denom * denom);
-     
+
     attenuation = (attenuation - cutoff) / (1 - cutoff);
     attenuation = max(attenuation, 0.0);
     return (attenuation);
@@ -95,11 +93,9 @@ void main() {
     uint index = tileID.y * workgroup_x + tileID.x;
     uint offset = index * 32;
 
-    vec4 diffuse = material.diffuse_color;
-    if (material.has_diffuse_texture != 0){
-	vec4 diffuse_color_tex = texture(diffuse_tex, vs_in.frag_uv);
-	diffuse = diffuse_color_tex;
-    }
+    vec4 diffuse = material.diffuse;
+    vec4 diffuse_color_tex = texture(diffuse_tex, vs_in.frag_uv);
+    diffuse = diffuse_color_tex;
     vec3 ambient = diffuse.rgb * 0.2f;
 
     float alpha = diffuse.a;

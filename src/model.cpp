@@ -42,25 +42,51 @@ Model::Model(const std::string filename) {
   }
   for (const auto& material : materials) {
     Mesh mesh(0, 0);
-    mesh.material.has_diffuse_texture =
-        material.diffuse_texname.empty() == false ? 1 : 0;
-    mesh.material.has_specular_texture =
-        material.specular_texname.empty() == false ? 1 : 0;
 
-    mesh.material.opacity = 1.0f;
-    mesh.material.specular_power = material.shininess;
+    // Copy material from tinyobjloader material_t
+    mesh.material.ambient = glm::vec4(material.ambient[0], material.ambient[1],
+                                      material.ambient[2], 1.0f);
+    mesh.material.diffuse = glm::vec4(material.diffuse[0], material.diffuse[1],
+                                      material.diffuse[2], 1.0f);
+    mesh.material.specular = glm::vec4(
+        material.specular[0], material.specular[1], material.specular[2], 1.0f);
+    mesh.material.transmittance =
+        glm::vec4(material.transmittance[0], material.transmittance[1],
+                  material.transmittance[2], 1.0f);
+    mesh.material.emission = glm::vec4(
+        material.emission[0], material.emission[1], material.emission[2], 1.0f);
+
+    mesh.material.opacity = material.dissolve;
     mesh.material.index_of_refraction = material.ior;
+    mesh.material.specular_power = material.shininess;
 
     mesh.ambient_texname = sanitizeFilename(basedir + material.ambient_texname);
     mesh.diffuse_texname = sanitizeFilename(basedir + material.diffuse_texname);
     mesh.specular_texname =
         sanitizeFilename(basedir + material.specular_texname);
+    mesh.specular_highlight_texname =
+        sanitizeFilename(basedir + material.specular_highlight_texname);
     mesh.bump_texname = sanitizeFilename(basedir + material.bump_texname);
+    mesh.displacement_texname =
+        sanitizeFilename(basedir + material.displacement_texname);
+    mesh.alpha_texname = sanitizeFilename(basedir + material.alpha_texname);
 
-    mesh.material.specular_color = glm::vec4(
-        material.specular[0], material.specular[1], material.specular[2], 1.0f);
-    mesh.material.ambient_color = glm::vec4(
-        material.ambient[0], material.ambient[1], material.ambient[2], 1.0f);
+    mesh.roughness_texname =
+        sanitizeFilename(basedir + material.roughness_texname);
+    mesh.metallic_texname =
+        sanitizeFilename(basedir + material.metallic_texname);
+    mesh.sheen_texname = sanitizeFilename(basedir + material.sheen_texname);
+    mesh.emissive_texname =
+        sanitizeFilename(basedir + material.emissive_texname);
+    mesh.normal_texname = sanitizeFilename(basedir + material.normal_texname);
+
+    mesh.material.roughness = material.roughness;
+    mesh.material.metallic = material.metallic;
+    mesh.material.sheen = material.sheen;
+    mesh.material.clearcoat_thickness = material.clearcoat_thickness;
+    mesh.material.clearcoat_roughness = material.clearcoat_roughness;
+    mesh.material.anisotropy = material.anisotropy;
+    mesh.material.anisotropy_rotation = material.anisotropy_rotation;
 
     meshes.push_back(mesh);
   }
