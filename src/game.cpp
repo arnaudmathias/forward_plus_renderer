@@ -18,8 +18,7 @@ Game::Game(void) {
     attrib.material = mesh.material;
 
     attrib.diffuse = new Texture(mesh.diffuse_texname);
-    attrib.specular = new Texture(mesh.specular_texname);
-    // attrib.bump = new Texture(mesh.bump_texname);
+    attrib.normal = new Texture(mesh.bump_texname);
     attrib.vaos.push_back(new VAO(vertices));
     attribs.push_back(attrib);
   }
@@ -51,6 +50,7 @@ void Game::render(const Env& env, render::Renderer& renderer) {
   renderer.uniforms.view = _camera->view;
   renderer.uniforms.proj = _camera->proj;
   renderer.uniforms.view_proj = _camera->proj * _camera->view;
+  renderer.uniforms.view_pos = _camera->pos;
   renderer.uniforms.time = env.getAbsoluteTime();
   renderer.uniforms.screen_size =
       glm::ivec2(renderer.getScreenWidth(), renderer.getScreenHeight());

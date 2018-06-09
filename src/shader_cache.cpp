@@ -1,7 +1,7 @@
 #include "shader_cache.hpp"
 
 ShaderCache::ShaderCache(void) {
-  _shaders.emplace("default", new Shader("shaders/default"));
+  _shaders.emplace("default", new Shader("shaders/shading"));
   _shaders.emplace("depthprepass", new Shader("shaders/depthprepass"));
   _shaders.emplace("lightculling", new Shader("shaders/lightculling"));
   _shaders.emplace("text", new Shader("shaders/text"));

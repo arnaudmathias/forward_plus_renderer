@@ -3,11 +3,10 @@
 namespace render {
 
 Renderer::Renderer(int width, int height) : _width(width), _height(height) {
-  for (int i = 0; i < 10; i++) {
-    lights_data.lights[i].position =
-        glm::vec4(0.0f, 0.0f + i * 10.0f, 0.0f, 1.0f);
-    lights_data.lights[i].radius = 3.0f;
-    lights_data.lights[i].color = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
+  for (int i = 0; i < NUM_LIGHTS; i++) {
+    lights_data.lights[i].position = glm::vec3(0.0f, 1.0f, 0.0f);
+    lights_data.lights[i].radius = 10.0f;
+    lights_data.lights[i].color = glm::vec3(1.0f, 1.0f, 0.0f);
     lights_data.lights[i].intensity = 1.0f;
   }
 
@@ -120,6 +119,7 @@ void Renderer::switchShader(GLuint shader_id, int &current_shader_id) {
     setUniform(glGetUniformLocation(shader_id, "P"), uniforms.proj);
     setUniform(glGetUniformLocation(shader_id, "V"), uniforms.view);
     setUniform(glGetUniformLocation(shader_id, "VP"), uniforms.view_proj);
+    setUniform(glGetUniformLocation(shader_id, "view_pos"), uniforms.view_pos);
     setUniform(glGetUniformLocation(shader_id, "num_lights"), NUM_LIGHTS);
     setUniform(glGetUniformLocation(shader_id, "screen_size"),
                uniforms.screen_size);
@@ -136,7 +136,7 @@ void Renderer::updateUniforms(const Attrib &attrib, const int shader_id) {
                uniforms.view * attrib.model);
     setUniform(glGetUniformLocation(shader_id, "M"), attrib.model);
     setUniform(glGetUniformLocation(shader_id, "diffuse_tex"), 0);
-    setUniform(glGetUniformLocation(shader_id, "specular_tex"), 1);
+    setUniform(glGetUniformLocation(shader_id, "bump_tex"), 1);
   }
 }
 
@@ -198,10 +198,6 @@ void Renderer::draw() {
     memcpy(ubo_ptr, &ubo, sizeof(UBO));
     glUnmapBuffer(GL_UNIFORM_BUFFER);
 
-    /*glUniformBlockBinding(
-        default->id, glGetUniformBlockIndex(default->id, "lights_data"), 0);
-    glUniformBlockBinding(
-        default->id, glGetUniformBlockIndex(default->id, "material_data"), 2);*/
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_lights);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_visible_lights);
     glBindBufferBase(GL_UNIFORM_BUFFER, 2, ubo_id);
@@ -209,7 +205,7 @@ void Renderer::draw() {
     updateUniforms(attrib, default->id);
 
     bindTexture(attrib.diffuse, GL_TEXTURE0);
-    bindTexture(attrib.specular, GL_TEXTURE0 + 1);
+    bindTexture(attrib.normal, GL_TEXTURE0 + 1);
 
     drawVAOs(attrib.vaos, attrib.state.primitiveMode);
   }

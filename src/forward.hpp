@@ -1,6 +1,6 @@
 #pragma once
 #define TILE_SIZE 16
-#define NUM_LIGHTS 10
+#define NUM_LIGHTS 3
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -88,6 +88,7 @@ struct Vertex {
   glm::vec3 position = {0, 0, 0};
   glm::vec3 normal = {0, 0, 0};
   glm::vec2 uv = {0, 0};
+  glm::vec3 tangent = {0, 0, 0};
 
   Vertex() = default;
   Vertex(Vertex const& src) { *this = src; }
@@ -97,6 +98,7 @@ struct Vertex {
       position = rhs.position;
       normal = rhs.normal;
       uv = rhs.uv;
+      tangent = rhs.tangent;
     }
     return (*this);
   };

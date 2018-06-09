@@ -85,6 +85,7 @@ struct Uniforms {
   glm::mat4 ortho;
   glm::mat4 view_proj;
   glm::ivec2 screen_size;
+  glm::vec3 view_pos;
   float time;
   int debug = 0;
 };

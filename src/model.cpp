@@ -51,9 +51,6 @@ Model::Model(const std::string filename) {
     mesh.material.specular_power = material.shininess;
     mesh.material.index_of_refraction = material.ior;
 
-    // std::cout << "mesh.material.specular_power: "
-    //         << mesh.material.specular_power << std::endl;
-
     mesh.ambient_texname = sanitizeFilename(basedir + material.ambient_texname);
     mesh.diffuse_texname = sanitizeFilename(basedir + material.diffuse_texname);
     mesh.specular_texname =
@@ -114,6 +111,22 @@ Model::Model(const std::string filename) {
         face.vertices[1].normal = normal;
         face.vertices[2].normal = normal;
       }
+
+      glm::vec3 edge1 = face.vertices[1].position - face.vertices[0].position;
+      glm::vec3 edge2 = face.vertices[2].position - face.vertices[0].position;
+      glm::vec2 deltaUV1 = face.vertices[1].uv - face.vertices[0].uv;
+      glm::vec2 deltaUV2 = face.vertices[2].uv - face.vertices[0].uv;
+
+      float r = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+      glm::vec3 tangent;
+      tangent.x = r * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+      tangent.y = r * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+      tangent.z = r * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+      tangent = glm::normalize(tangent);
+      face.vertices[0].tangent = tangent;
+      face.vertices[1].tangent = tangent;
+      face.vertices[2].tangent = tangent;
 
       faceList.push_back(face);
     }
