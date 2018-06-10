@@ -57,7 +57,13 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
 
 Renderer::Renderer(Renderer const &src) { *this = src; }
 
-Renderer::~Renderer(void) {}
+Renderer::~Renderer(void) {
+  glDeleteTextures(1, &depthmap_id);
+  glDeleteFramebuffers(1, &depthmap_fbo);
+  glDeleteBuffers(1, &ssbo_lights);
+  glDeleteBuffers(1, &ssbo_visible_lights);
+  glDeleteBuffers(1, &ubo_id);
+}
 
 Renderer &Renderer::operator=(Renderer const &rhs) {
   if (this != &rhs) {
@@ -234,9 +240,28 @@ void Renderer::update(const Env &env) {
   if (env.width != _width || env.height != _height) {
     _width = env.width;
     _height = env.height;
+    updateRessources();
   }
   _textRenderer.update(env);
   _shaderCache.update();
+}
+
+void Renderer::updateRessources() {
+  // Rebuild ressources dependent on the framebuffer size
+  glBindTexture(GL_TEXTURE_2D, depthmap_id);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _width, _height, 0,
+               GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+  GLuint workgroup_x = (_width + (_width % TILE_SIZE)) / TILE_SIZE;
+  GLuint workgroup_y = (_height + (_height % TILE_SIZE)) / TILE_SIZE;
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_visible_lights);
+  glBufferData(GL_SHADER_STORAGE_BUFFER,
+               sizeof(int) * workgroup_x * workgroup_y * 32, NULL,
+               GL_DYNAMIC_DRAW);
 }
 
 void Renderer::flushAttribs() { this->_attribs.clear(); }

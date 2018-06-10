@@ -161,6 +161,7 @@ class Renderer {
   TextRenderer _textRenderer;
   UiRenderer _uiRenderer;
 
+  void updateRessources();
   void drawVAOs(const std::vector<VAO*>& vaos, PrimitiveMode primitive_mode);
   void switchShader(GLuint shader_id, int& current_shader_id);
   void updateUniforms(const Attrib& attrib, const int shader_id);
