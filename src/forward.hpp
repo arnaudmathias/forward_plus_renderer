@@ -39,19 +39,6 @@ struct Light {
   float radius = 1.0f;
   glm::vec3 color = {};
   float intensity = 1.0f;
-
-  Light() = default;
-  Light(Light const& src) { *this = src; }
-
-  Light& operator=(Light const& rhs) {
-    if (this != &rhs) {
-      position = rhs.position;
-      radius = rhs.radius;
-      color = rhs.color;
-      intensity = rhs.intensity;
-    }
-    return (*this);
-  };
 };
 
 struct Vertex {
@@ -59,19 +46,6 @@ struct Vertex {
   glm::vec3 normal = {0, 0, 0};
   glm::vec2 uv = {0, 0};
   glm::vec3 tangent = {0, 0, 0};
-
-  Vertex() = default;
-  Vertex(Vertex const& src) { *this = src; }
-
-  Vertex& operator=(Vertex const& rhs) {
-    if (this != &rhs) {
-      position = rhs.position;
-      normal = rhs.normal;
-      uv = rhs.uv;
-      tangent = rhs.tangent;
-    }
-    return (*this);
-  };
 };
 
 static std::ostream& operator<<(std::ostream& o, glm::vec3 const& v) {

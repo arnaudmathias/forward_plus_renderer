@@ -22,7 +22,7 @@ struct Character {
 
 struct Font {
   std::map<GLchar, Character> characters;
-  float size;
+  float size = 0;
 };
 
 class TextRenderer {

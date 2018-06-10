@@ -4,7 +4,7 @@
 
 class FrustrumCulling {
  public:
-  FrustrumCulling(void);
+  FrustrumCulling(void) = default;
   FrustrumCulling(FrustrumCulling const& src);
   ~FrustrumCulling(void);
   FrustrumCulling& operator=(FrustrumCulling const& rhs);
@@ -12,5 +12,5 @@ class FrustrumCulling {
   bool cull(const glm::vec3& center, const glm::vec3& halfsize);
 
  private:
-  glm::vec4 frustrum_planes[6];
+  glm::vec4 frustrum_planes[6] = {};
 };

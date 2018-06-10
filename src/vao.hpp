@@ -37,12 +37,12 @@ struct VAO {
                  GL_STATIC_DRAW);
   }
 
-  GLuint vao;
-  GLsizei vertices_size;
-  GLsizei indices_size;
+  GLuint vao = 0;
+  GLsizei vertices_size = 0;
+  GLsizei indices_size = 0;
 
  private:
   void initialize();
-  GLuint _vbo;
-  GLuint _ebo;
+  GLuint _vbo = 0;
+  GLuint _ebo = 0;
 };

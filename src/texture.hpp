@@ -14,7 +14,8 @@ struct Texture {
   Texture(const std::vector<std::string>& textures);          // Cubemap
   ~Texture();
   std::string filename;
-  GLuint id;
-  int height;
-  int width;
+
+  GLuint id = 0;
+  int height = 0;
+  int width = 0;
 };

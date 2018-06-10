@@ -12,8 +12,8 @@ const int shader_types[4] = {GL_VERTEX_SHADER, GL_GEOMETRY_SHADER,
 const std::string shader_extensions[4] = {".vert", ".geom", ".frag", ".comp"};
 
 struct ShaderFile {
-  std::string filename;
-  std::time_t last_modification;
+  std::string filename = "";
+  std::time_t last_modification = 0;
 };
 
 class Shader {
@@ -23,18 +23,18 @@ class Shader {
   ~Shader(void);
   Shader &operator=(Shader const &rhs);
 
-  GLuint id;
+  GLuint id = 0;
   void use() const;
   void reload();
 
  private:
-  Shader(void);
+  Shader(void) = default;
   GLuint loadShader(std::string &shader);
   GLuint compileShader(const std::string source, std::string filename,
                        GLuint shaderType);
   GLuint linkShaders(const std::array<GLuint, 4> shader_ids);
   const std::string getShaderSource(std::string filename);
-  ShaderFile _shaders[4];
+  ShaderFile _shaders[4] = {{}};
 };
 
 void printShaderError(GLuint shade, std::string filename);

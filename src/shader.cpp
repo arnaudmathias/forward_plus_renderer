@@ -1,7 +1,5 @@
 #include "shader.hpp"
 
-Shader::Shader(void) {}
-
 Shader::Shader(Shader const &src) { *this = src; }
 
 Shader::~Shader(void) {}
@@ -56,13 +54,13 @@ GLuint Shader::loadShader(std::string &shader_filename) {
 GLuint Shader::linkShaders(const std::array<GLuint, 4> shader_ids) {
   GLuint program_id = glCreateProgram();
 
-  for (int i = 0; i < shader_ids.size(); i++) {
+  for (unsigned int i = 0; i < shader_ids.size(); i++) {
     if (shader_ids[i] != 0) {
       glAttachShader(program_id, shader_ids[i]);
     }
   }
   glLinkProgram(program_id);
-  for (int i = 0; i < shader_ids.size(); i++) {
+  for (unsigned int i = 0; i < shader_ids.size(); i++) {
     if (shader_ids[i] != 0) {
       glDeleteShader(shader_ids[i]);
     }

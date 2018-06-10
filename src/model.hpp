@@ -12,8 +12,8 @@ class Mesh {
   Mesh(Mesh const& src);
   Mesh& operator=(Mesh const& rhs);
 
-  uint32_t indexCount;   // vertices count
-  int32_t vertexOffset;  // offset in vertex array
+  uint32_t indexCount = 0;   // vertices count
+  int32_t vertexOffset = 0;  // offset in vertex array
 
   std::string ambient_texname;
   std::string diffuse_texname;

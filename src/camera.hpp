@@ -17,11 +17,11 @@ class Camera {
   glm::mat4 view;
   int width;
   int height;
-  bool mouseInit;
-  float mouseXpos;
-  float mouseYpos;
-  float oldMouseXpos;
-  float oldMouseYpos;
+  bool mouseInit = false;
+  float mouseXpos = 0;
+  float mouseYpos = 0;
+  float oldMouseXpos = 0;
+  float oldMouseYpos = 0;
   float zNear;
   float zFar;
 
@@ -36,5 +36,5 @@ class Camera {
   float horAngle;
   float verAngle;
   float speed;
-  float lastVelocity;
+  float lastVelocity = 0.0f;
 };

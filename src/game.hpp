@@ -16,7 +16,7 @@ class Game {
 
  private:
   bool _debugMode = false;
-  Camera* _camera;
+  Camera* _camera = nullptr;
   std::vector<VAO*> vaos;
   std::vector<render::Attrib> attribs;
 

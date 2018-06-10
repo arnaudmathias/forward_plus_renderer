@@ -1,7 +1,5 @@
 #include "culling.hpp"
 
-FrustrumCulling::FrustrumCulling(void) {}
-
 FrustrumCulling::FrustrumCulling(FrustrumCulling const &src) { *this = src; }
 
 FrustrumCulling::~FrustrumCulling(void) {}

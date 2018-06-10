@@ -92,8 +92,8 @@ Model::Model(const std::string filename) {
   }
 
   struct Face {
-    Vertex vertices[3];
-    int32_t material_id;
+    Vertex vertices[3] = {{}};
+    int32_t material_id = 0;
   };
 
   std::vector<Face> faceList;

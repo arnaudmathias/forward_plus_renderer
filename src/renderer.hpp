@@ -86,7 +86,7 @@ struct Uniforms {
   glm::mat4 view_proj;
   glm::ivec2 screen_size;
   glm::vec3 view_pos;
-  float time;
+  float time = 0;
   int debug = 0;
 };
 
@@ -106,7 +106,6 @@ struct Attrib {
   Texture* opacity = nullptr;
 
   RenderState state;
-  Attrib(){};
 
   bool operator<(const struct Attrib& rhs) const;
 };
@@ -138,17 +137,17 @@ class Renderer {
   void switchDepthTestState(bool state);
   void switchBlendingState(bool state);
 
-  Uniforms uniforms;
-  UBO ubo;
-  GLuint ubo_id;
+  Uniforms uniforms = {};
+  UBO ubo = {};
+  GLuint ubo_id = 0;
 
-  LightSSBO lights_data;
-  GLuint ssbo_lights;
+  LightSSBO lights_data = {};
+  GLuint ssbo_lights = 0;
 
-  GLuint ssbo_visible_lights;
+  GLuint ssbo_visible_lights = 0;
 
-  GLuint depthmap_fbo;
-  GLuint depthmap_id;
+  GLuint depthmap_fbo = 0;
+  GLuint depthmap_id = 0;
 
  private:
   Renderer(void) = default;

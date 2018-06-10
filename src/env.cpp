@@ -1,6 +1,6 @@
 #include "env.hpp"
 
-Env::Env() : Env(0, 0) {}
+Env::Env() noexcept : Env(0, 0) {}
 
 Env::Env(unsigned short width, unsigned short height)
     : width(width),
@@ -10,24 +10,25 @@ Env::Env(unsigned short width, unsigned short height)
       _window_height(720) {
   if (!glfwInit()) return;
   setupWindowHint();
+  std::string window_name = "Forward+ renderer";
   GLFWmonitor *primary_monitor = glfwGetPrimaryMonitor();
   const GLFWvidmode *mode = glfwGetVideoMode(primary_monitor);
   if (width == 0 && height == 0) {
     this->width = mode->width;
     this->height = mode->height;
-    window = glfwCreateWindow(this->width, this->height, "ft_vox",
+    window = glfwCreateWindow(this->width, this->height, window_name.c_str(),
                               primary_monitor, NULL);
     glfwSetWindowMonitor(window, primary_monitor, 0, 0, mode->width,
                          mode->height, mode->refreshRate);
   } else {
     _window_width = width;
     _window_height = height;
-    window = glfwCreateWindow(width, height, "ft_vox", NULL, NULL);
+    window = glfwCreateWindow(width, height, window_name.c_str(), NULL, NULL);
     glfwSetWindowMonitor(window, NULL, (mode->width / 2) - (_window_width / 2),
                          (mode->height / 2) - (_window_height / 2),
                          _window_width, _window_height, 0);
-    inputHandler.mousex = _window_width / 2;
-    inputHandler.mousey = _window_height / 2;
+    inputHandler.mousex = static_cast<float>(_window_width / 2);
+    inputHandler.mousey = static_cast<float>(_window_height / 2);
   }
   if (!window) {
     std::cout << "Could not create window\n";
