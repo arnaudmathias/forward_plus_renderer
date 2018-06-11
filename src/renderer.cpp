@@ -4,9 +4,9 @@ namespace render {
 
 Renderer::Renderer(int width, int height) : _width(width), _height(height) {
   for (int i = 0; i < NUM_LIGHTS; i++) {
-    lights_data.lights[i].position = glm::vec3(-10.0 + i * 2.0, 1.0f, 0.0f);
-    lights_data.lights[i].radius = 1.5f;
-    lights_data.lights[i].color = glm::vec3(1.0f, 0.0f, 0.0f);
+    lights_data.lights[i].position = glm::vec3(-10.0 + i * 10.0, 1.0f, 0.0f);
+    lights_data.lights[i].radius = 15.5f;
+    lights_data.lights[i].color = glm::vec3(1.0f, 1.0f, 1.0f);
     lights_data.lights[i].intensity = 1.0f;
   }
 
@@ -108,8 +108,10 @@ void Renderer::updateUniforms(const Attrib &attrib, const int shader_id) {
     setUniform(glGetUniformLocation(shader_id, "MV"),
                uniforms.view * attrib.model);
     setUniform(glGetUniformLocation(shader_id, "M"), attrib.model);
-    setUniform(glGetUniformLocation(shader_id, "diffuse_tex"), 0);
-    setUniform(glGetUniformLocation(shader_id, "bump_tex"), 1);
+    setUniform(glGetUniformLocation(shader_id, "albedo_tex"), 0);
+    setUniform(glGetUniformLocation(shader_id, "metallic_tex"), 1);
+    setUniform(glGetUniformLocation(shader_id, "roughness_tex"), 2);
+    setUniform(glGetUniformLocation(shader_id, "normal_tex"), 3);
   }
 }
 
@@ -146,8 +148,10 @@ void Renderer::draw() {
 
     updateUniforms(attrib, shading->id);
 
-    bindTexture(attrib.diffuse, GL_TEXTURE0);
-    bindTexture(attrib.normal, GL_TEXTURE0 + 1);
+    bindTexture(attrib.albedo, GL_TEXTURE0);
+    bindTexture(attrib.metallic, GL_TEXTURE0 + 1);
+    bindTexture(attrib.roughness, GL_TEXTURE0 + 2);
+    bindTexture(attrib.normal, GL_TEXTURE0 + 3);
 
     drawVAOs(attrib.vaos, attrib.state.primitiveMode);
   }

@@ -96,13 +96,10 @@ struct Attrib {
   std::vector<VAO*> vaos;
   Material material;
 
-  Texture* ambient = nullptr;
-  Texture* emissive = nullptr;
-  Texture* diffuse = nullptr;
-  Texture* specular = nullptr;
-  Texture* specular_power = nullptr;
+  Texture* albedo = nullptr;
   Texture* normal = nullptr;
-  Texture* bump = nullptr;
+  Texture* metallic = nullptr;
+  Texture* roughness = nullptr;
   Texture* opacity = nullptr;
 
   RenderState state;
