@@ -152,7 +152,7 @@ void Renderer::draw() {
 
   Shader *depthprepass = _shaderCache.getShader("depthprepass");
   Shader *lightculling = _shaderCache.getShader("lightculling");
-  Shader *default = _shaderCache.getShader("default");
+  Shader *shading = _shaderCache.getShader("shading");
 
   glViewport(0, 0, _width, _height);
 
@@ -191,8 +191,8 @@ void Renderer::draw() {
   glDispatchCompute(workgroup_x, workgroup_y, 1);
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-  switchShader(default->id, current_shader_id);
-  setUniform(glGetUniformLocation(default->id, "workgroup_x"),
+  switchShader(shading->id, current_shader_id);
+  setUniform(glGetUniformLocation(shading->id, "workgroup_x"),
              static_cast<int>(workgroup_x));
   for (const auto &attrib : this->_attribs) {
     setState(attrib.state);
@@ -208,7 +208,7 @@ void Renderer::draw() {
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_visible_lights);
     glBindBufferBase(GL_UNIFORM_BUFFER, 2, ubo_id);
 
-    updateUniforms(attrib, default->id);
+    updateUniforms(attrib, shading->id);
 
     bindTexture(attrib.diffuse, GL_TEXTURE0);
     bindTexture(attrib.normal, GL_TEXTURE0 + 1);

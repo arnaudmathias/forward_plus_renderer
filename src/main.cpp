@@ -4,6 +4,9 @@
 
 int main(int argc, char **argv) {
   Env env(1280, 720);
+  if (env.window == nullptr) {
+    return (EXIT_FAILURE);
+  }
   env.inputHandler.mouseDisabled = false;
   env.inputHandler.keybrDisabled = false;
   render::Renderer renderer(env.width, env.height);

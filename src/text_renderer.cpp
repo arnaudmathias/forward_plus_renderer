@@ -17,9 +17,14 @@ void TextRenderer::loadFont(std::string font_filename, float size) {
     std::cerr << font_filename << " already loaded" << std::endl;
   }
   unsigned int filesize = io::get_filesize(font_filename);
+#if defined(__APPLE__) || defined(__linux__)
+  FILE *font_fp = fopen(font_filename.c_str(), "rb");
+  if (font_fp != NULL) {
+#elif defined(_WIN32)
   FILE *font_fp;
   errno_t err = fopen_s(&font_fp, font_filename.c_str(), "rb");
-  if (err == 0) {
+  if (err = 0) {
+#endif
     unsigned char *ttf_buffer = new unsigned char[filesize + 1];
     fread(ttf_buffer, filesize + 1, 1, font_fp);
 

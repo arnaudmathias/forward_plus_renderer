@@ -18,20 +18,25 @@ Env::Env(unsigned short width, unsigned short height)
     this->height = mode->height;
     window = glfwCreateWindow(this->width, this->height, window_name.c_str(),
                               primary_monitor, NULL);
-    glfwSetWindowMonitor(window, primary_monitor, 0, 0, mode->width,
-                         mode->height, mode->refreshRate);
+    if (window) {
+      glfwSetWindowMonitor(window, primary_monitor, 0, 0, mode->width,
+                           mode->height, mode->refreshRate);
+    }
   } else {
     _window_width = width;
     _window_height = height;
     window = glfwCreateWindow(width, height, window_name.c_str(), NULL, NULL);
-    glfwSetWindowMonitor(window, NULL, (mode->width / 2) - (_window_width / 2),
-                         (mode->height / 2) - (_window_height / 2),
-                         _window_width, _window_height, 0);
+    if (window) {
+      glfwSetWindowMonitor(window, NULL,
+                           (mode->width / 2) - (_window_width / 2),
+                           (mode->height / 2) - (_window_height / 2),
+                           _window_width, _window_height, 0);
+    }
     inputHandler.mousex = static_cast<float>(_window_width / 2);
     inputHandler.mousey = static_cast<float>(_window_height / 2);
   }
   if (!window) {
-    std::cout << "Could not create window\n";
+    std::cerr << "Could not create window\n";
     glfwTerminate();
     return;
   }
