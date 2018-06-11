@@ -18,6 +18,7 @@ int main(int argc, char **argv) {
     renderer.update(env);
     renderer.clearScreen();
     game.render(env, renderer);
+    GL_DUMP_ERROR("main");
     glfwSwapBuffers(env.window);
   }
   return (EXIT_SUCCESS);

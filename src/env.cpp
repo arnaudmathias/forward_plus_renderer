@@ -89,7 +89,7 @@ void Env::toggleFullscreen() {
 
 void Env::setupWindowHint() {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
@@ -108,10 +108,6 @@ void Env::setupWindow() {
 void Env::setupContext() {
   glfwSwapInterval(0);
   glEnable(GL_DEBUG_OUTPUT);
-  glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-  glDebugMessageCallback(openglCallbackFunction, nullptr);
-  glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL,
-                        true);
   while (glGetError() != GL_NO_ERROR)
     ;  // Flush gl_error
   glEnable(GL_DEPTH_TEST);

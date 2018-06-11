@@ -142,12 +142,7 @@ class Renderer {
   GLuint ubo_id = 0;
 
   LightSSBO lights_data = {};
-  GLuint ssbo_lights = 0;
-
-  GLuint ssbo_visible_lights = 0;
-
-  GLuint depthmap_fbo = 0;
-  GLuint depthmap_id = 0;
+  GLuint ubo_lights = 0;
 
  private:
   Renderer(void) = default;

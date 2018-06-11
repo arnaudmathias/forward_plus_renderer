@@ -10,58 +10,25 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
     lights_data.lights[i].intensity = 1.0f;
   }
 
-  // Gen and setup our depth map FBO for the depth prepass
-  glGenFramebuffers(1, &depthmap_fbo);
-
-  glGenTextures(1, &depthmap_id);
-  glBindTexture(GL_TEXTURE_2D, depthmap_id);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _width, _height, 0,
-               GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-
-  glBindFramebuffer(GL_FRAMEBUFFER, depthmap_fbo);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
-                         depthmap_id, 0);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-  // Lights SSBO
-  glGenBuffers(1, &ssbo_lights);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_lights);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(LightSSBO), &lights_data,
+  glGenBuffers(1, &ubo_lights);
+  glBindBuffer(GL_UNIFORM_BUFFER, ubo_lights);
+  glBufferData(GL_UNIFORM_BUFFER, sizeof(LightSSBO), &lights_data,
                GL_DYNAMIC_DRAW);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_lights);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-  GLuint workgroup_x = (_width + (_width % TILE_SIZE)) / TILE_SIZE;
-  GLuint workgroup_y = (_height + (_height % TILE_SIZE)) / TILE_SIZE;
-  // Visible light indices SSBO
-  // TODO: Handle resizing
-  glGenBuffers(1, &ssbo_visible_lights);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_visible_lights);
-  glBufferData(GL_SHADER_STORAGE_BUFFER,
-               sizeof(int) * workgroup_x * workgroup_y * 32, NULL,
-               GL_DYNAMIC_DRAW);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_visible_lights);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+  glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo_lights);
+  glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
   // Material UBO
   glGenBuffers(1, &ubo_id);
   glBindBuffer(GL_UNIFORM_BUFFER, ubo_id);
   glBufferData(GL_UNIFORM_BUFFER, sizeof(UBO), &ubo, GL_DYNAMIC_DRAW);
-  glBindBufferBase(GL_UNIFORM_BUFFER, 2, ubo_id);
+  glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo_id);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
 Renderer::Renderer(Renderer const &src) { *this = src; }
 
 Renderer::~Renderer(void) {
-  glDeleteTextures(1, &depthmap_id);
-  glDeleteFramebuffers(1, &depthmap_fbo);
-  glDeleteBuffers(1, &ssbo_lights);
-  glDeleteBuffers(1, &ssbo_visible_lights);
+  glDeleteBuffers(1, &ubo_lights);
   glDeleteBuffers(1, &ubo_id);
 }
 
@@ -156,47 +123,18 @@ void Renderer::draw() {
 
   glViewport(0, 0, _width, _height);
 
-  // Depth prepass
-  // Bind the framebuffer and render scene geometry
-  glBindFramebuffer(GL_FRAMEBUFFER, depthmap_fbo);
-  glClear(GL_DEPTH_BUFFER_BIT);
-
-  switchDepthTestState(true);
-  switchShader(depthprepass->id, current_shader_id);
-  for (const auto &attrib : this->_attribs) {
-    setState(attrib.state);
-    updateUniforms(attrib, depthprepass->id);
-    drawVAOs(attrib.vaos, attrib.state.primitiveMode);
-  }
-
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_lights);
-  GLvoid *lights_ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
-  memcpy(lights_ptr, &lights_data, sizeof(LightSSBO));
-  glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-
-  // Light culling computing pass
-  GLuint workgroup_x = (_width + (_width % TILE_SIZE)) / TILE_SIZE;
-  GLuint workgroup_y = (_height + (_height % TILE_SIZE)) / TILE_SIZE;
-
-  switchShader(lightculling->id, current_shader_id);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_lights);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_visible_lights);
-
-  glActiveTexture(GL_TEXTURE0);
-  setUniform(glGetUniformLocation(lightculling->id, "depthmap"), 0);
-  glBindTexture(GL_TEXTURE_2D, depthmap_id);
-
-  glDispatchCompute(workgroup_x, workgroup_y, 1);
-  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
   switchShader(shading->id, current_shader_id);
-  setUniform(glGetUniformLocation(shading->id, "workgroup_x"),
-             static_cast<int>(workgroup_x));
-  for (const auto &attrib : this->_attribs) {
-    setState(attrib.state);
 
+  glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo_lights);
+
+  glBindBuffer(GL_UNIFORM_BUFFER, ubo_lights);
+  GLvoid *ubo_light_ptr = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+  memcpy(ubo_light_ptr, &lights_data, sizeof(LightSSBO));
+  glUnmapBuffer(GL_UNIFORM_BUFFER);
+
+  for (const auto &attrib : this->_attribs) {
     ubo.material = attrib.material;
 
     glBindBuffer(GL_UNIFORM_BUFFER, ubo_id);
@@ -204,9 +142,7 @@ void Renderer::draw() {
     memcpy(ubo_ptr, &ubo, sizeof(UBO));
     glUnmapBuffer(GL_UNIFORM_BUFFER);
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_lights);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_visible_lights);
-    glBindBufferBase(GL_UNIFORM_BUFFER, 2, ubo_id);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo_id);
 
     updateUniforms(attrib, shading->id);
 
@@ -246,23 +182,7 @@ void Renderer::update(const Env &env) {
   _shaderCache.update();
 }
 
-void Renderer::updateRessources() {
-  // Rebuild ressources dependent on the framebuffer size
-  glBindTexture(GL_TEXTURE_2D, depthmap_id);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _width, _height, 0,
-               GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-
-  GLuint workgroup_x = (_width + (_width % TILE_SIZE)) / TILE_SIZE;
-  GLuint workgroup_y = (_height + (_height % TILE_SIZE)) / TILE_SIZE;
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_visible_lights);
-  glBufferData(GL_SHADER_STORAGE_BUFFER,
-               sizeof(int) * workgroup_x * workgroup_y * 32, NULL,
-               GL_DYNAMIC_DRAW);
-}
+void Renderer::updateRessources() {}
 
 void Renderer::flushAttribs() { this->_attribs.clear(); }
 
