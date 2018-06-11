@@ -17,8 +17,10 @@ Game::Game(void) {
     attrib.model = glm::scale(glm::vec3(0.01f));
     attrib.material = mesh.material;
 
-    attrib.diffuse = new Texture(mesh.diffuse_texname);
+    attrib.albedo = new Texture(mesh.diffuse_texname);
     attrib.normal = new Texture(mesh.bump_texname);
+    attrib.roughness = new Texture(mesh.roughness_texname);
+    attrib.metallic = new Texture(mesh.metallic_texname);
     attrib.vaos.push_back(new VAO(vertices));
     attribs.push_back(attrib);
   }

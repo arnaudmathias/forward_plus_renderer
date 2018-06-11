@@ -18,7 +18,18 @@ Mesh& Mesh::operator=(Mesh const& rhs) {
     ambient_texname = rhs.ambient_texname;
     diffuse_texname = rhs.diffuse_texname;
     specular_texname = rhs.specular_texname;
+    specular_highlight_texname = rhs.specular_highlight_texname;
     bump_texname = rhs.bump_texname;
+    displacement_texname = rhs.displacement_texname;
+    alpha_texname = rhs.alpha_texname;
+
+   roughness_texname = rhs.roughness_texname;
+   metallic_texname = rhs.metallic_texname;
+   sheen_texname = rhs.sheen_texname;
+   emissive_texname = rhs.emissive_texname;
+   normal_texname = rhs.normal_texname;
+
+   material = rhs.material;
   }
   return (*this);
 }
