@@ -138,6 +138,9 @@ class Renderer {
   UBO ubo = {};
   GLuint ubo_id = 0;
 
+  GLuint depthmap_fbo = 0;
+  GLuint depthmap_texture_id = 0;
+
   LightSSBO lights_data = {};
   GLuint ubo_lights = 0;
 

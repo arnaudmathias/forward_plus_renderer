@@ -10,6 +10,23 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
     lights_data.lights[i].intensity = 1.0f;
   }
 
+  // Gen and setup our depth depth map FBO for the depth prepass
+  glGenFramebuffers(1, &depthmap_fbo);
+  glGenTextures(1, &depthmap_texture_id);
+  glBindTexture(GL_TEXTURE_2D, depthmap_texture_id);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _width, _height, 0,
+               GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, depthmap_fbo);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+                         depthmap_texture_id, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  GL_DUMP_ERROR("renderer ctor");
+
   glGenBuffers(1, &ubo_lights);
   glBindBuffer(GL_UNIFORM_BUFFER, ubo_lights);
   glBufferData(GL_UNIFORM_BUFFER, sizeof(LightSSBO), &lights_data,
@@ -28,6 +45,8 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
 Renderer::Renderer(Renderer const &src) { *this = src; }
 
 Renderer::~Renderer(void) {
+  glDeleteTextures(1, &depthmap_texture_id);
+  glDeleteFramebuffers(1, &depthmap_fbo);
   glDeleteBuffers(1, &ubo_lights);
   glDeleteBuffers(1, &ubo_id);
 }
@@ -124,6 +143,19 @@ void Renderer::draw() {
   Shader *shading = _shaderCache.getShader("shading");
 
   glViewport(0, 0, _width, _height);
+
+  // Depth prepass
+  // Bind the framebuffer and render scene geometry
+  glBindFramebuffer(GL_FRAMEBUFFER, depthmap_fbo);
+  glClear(GL_DEPTH_BUFFER_BIT);
+
+  switchDepthTestState(true);
+  switchShader(depthprepass->id, current_shader_id);
+  for (const auto &attrib : this->_attribs) {
+    setState(attrib.state);
+    updateUniforms(attrib, depthprepass->id);
+    drawVAOs(attrib.vaos, attrib.state.primitiveMode);
+  }
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 

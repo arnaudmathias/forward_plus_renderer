@@ -29,7 +29,6 @@ Game::Game(void) {
 Game::Game(Game const& src) { *this = src; }
 
 Game::~Game(void) { delete _camera; }
-
 Game& Game::operator=(Game const& rhs) {
   if (this != &rhs) {
     this->_debugMode = rhs._debugMode;
