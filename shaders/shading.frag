@@ -1,13 +1,15 @@
 #version 410 core
+layout (location = 0) out vec4 out_hdr;
+layout (location = 1) out vec3 out_normal;
+
 const float PI = 3.14159265359;
+
 in VS_OUT {
     vec2 frag_uv;
     mat3 TBN;
     vec3 ts_frag_pos;
     vec3 ts_view_pos;
 } vs_in; 
-
-out vec4 frag_color;
 
 struct Material {
     vec4 ambient;
@@ -166,11 +168,7 @@ void main() {
     }
     vec3 ambient = vec3(0.03) * albedo;
     vec3 color = ambient + lo;
-    color = color / (color + vec3(1.0));
-    color = pow(color, vec3(1.0 / 2.2));  
-
-    if (alpha < 0.3) {
-	discard;
-    }
-    frag_color = vec4(color, 1.0);
+    //out_hdr = vec4(color, 1.0f);
+    out_hdr = vec4(albedo, 1.0f);
+    out_normal = normal;
 }

@@ -102,6 +102,7 @@ struct Attrib {
   Texture* roughness = nullptr;
   Texture* opacity = nullptr;
 
+  bool alpha_mask = false;
   RenderState state;
 
   bool operator<(const struct Attrib& rhs) const;
@@ -118,7 +119,7 @@ class Renderer {
                   glm::vec3 color);
   void renderUI(std::string filename, float pos_x, float pos_y, float scale,
                 bool centered);
-  void bindTexture(Texture* texture, GLenum tex_slot);
+  void bindTexture(GLuint texture_id, GLenum tex_slot);
   void update(const Env& env);
   void draw();
   void flushAttribs();
@@ -138,8 +139,13 @@ class Renderer {
   UBO ubo = {};
   GLuint ubo_id = 0;
 
-  GLuint depthmap_fbo = 0;
-  GLuint depthmap_texture_id = 0;
+  GLuint depthpass_fbo = 0;
+  GLuint depthpass_texture_depth_id = 0;
+
+  GLuint lightpass_fbo = 0;
+  GLuint lightpass_texture_hdr_id = 0;
+  GLuint lightpass_texture_normal_id = 0;
+  GLuint lightpass_texture_depth_id = 0;
 
   LightSSBO lights_data = {};
   GLuint ubo_lights = 0;
@@ -150,6 +156,7 @@ class Renderer {
   int _width = 0;
   int _height = 0;
   ShaderCache _shaderCache;
+  VAO* _vao_quad = nullptr;
 
   RenderState _state;
 
