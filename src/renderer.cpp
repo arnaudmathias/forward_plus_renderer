@@ -10,21 +10,68 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
     lights_data.lights[i].intensity = 1.0f;
   }
 
-  // Gen and setup our depth map FBO for the depth prepass
-  glGenFramebuffers(1, &depthmap_fbo);
+  // Gen and setup our depth depth map FBO for the depth prepass
+  glGenFramebuffers(1, &depthpass_fbo);
+  glBindFramebuffer(GL_FRAMEBUFFER, depthpass_fbo);
 
-  glGenTextures(1, &depthmap_id);
-  glBindTexture(GL_TEXTURE_2D, depthmap_id);
+  glGenTextures(1, &depthpass_texture_depth_id);
+  glBindTexture(GL_TEXTURE_2D, depthpass_texture_depth_id);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _width, _height, 0,
                GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-
-  glBindFramebuffer(GL_FRAMEBUFFER, depthmap_fbo);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
-                         depthmap_id, 0);
+                         depthpass_texture_depth_id, 0);
+
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+    std::cout << "Could not validate framebuffer" << std::endl;
+  }
+
+  glGenFramebuffers(1, &lightpass_fbo);
+  glBindFramebuffer(GL_FRAMEBUFFER, lightpass_fbo);
+
+  // HDR buffer
+  glGenTextures(1, &lightpass_texture_hdr_id);
+  glBindTexture(GL_TEXTURE_2D, lightpass_texture_hdr_id);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, _width, _height, 0, GL_RGBA,
+               GL_FLOAT, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                         lightpass_texture_hdr_id, 0);
+
+  // Normal buffer
+  glGenTextures(1, &lightpass_texture_normal_id);
+  glBindTexture(GL_TEXTURE_2D, lightpass_texture_normal_id);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, _width, _height, 0, GL_RGB,
+               GL_FLOAT, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
+                         lightpass_texture_normal_id, 0);
+
+  unsigned int attachments[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+  glDrawBuffers(2, attachments);
+
+  glGenTextures(1, &lightpass_texture_depth_id);
+  glBindTexture(GL_TEXTURE_2D, lightpass_texture_depth_id);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _width, _height, 0,
+               GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+                         lightpass_texture_depth_id, 0);
+
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+    std::cout << "Could not validate framebuffer" << std::endl;
+  }
+
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   // Lights SSBO
@@ -53,16 +100,31 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
   glBufferData(GL_UNIFORM_BUFFER, sizeof(UBO), &ubo, GL_DYNAMIC_DRAW);
   glBindBufferBase(GL_UNIFORM_BUFFER, 2, ubo_id);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+  _vao_quad = new VAO({{-1.0f, 1.0f, 0.0, 0.0},
+                       {-1.0f, -1.0f, 0.0, 1.0},
+                       {1.0f, -1.0f, 1.0, 1.0},
+                       {-1.0f, 1.0f, 0.0, 0.0},
+                       {1.0f, -1.0f, 1.0, 1.0},
+                       {1.0f, 1.0f, 1.0, 0.0}});
 }
 
 Renderer::Renderer(Renderer const &src) { *this = src; }
 
 Renderer::~Renderer(void) {
-  glDeleteTextures(1, &depthmap_id);
-  glDeleteFramebuffers(1, &depthmap_fbo);
   glDeleteBuffers(1, &ssbo_lights);
   glDeleteBuffers(1, &ssbo_visible_lights);
   glDeleteBuffers(1, &ubo_id);
+
+  glDeleteTextures(1, &depthpass_texture_depth_id);
+  glDeleteFramebuffers(1, &depthpass_fbo);
+
+  glDeleteTextures(1, &lightpass_texture_hdr_id);
+  glDeleteTextures(1, &lightpass_texture_normal_id);
+  glDeleteTextures(1, &lightpass_texture_depth_id);
+  glDeleteFramebuffers(1, &lightpass_fbo);
+
+  delete _vao_quad;
 }
 
 Renderer &Renderer::operator=(Renderer const &rhs) {
@@ -105,10 +167,10 @@ void Renderer::renderUI(std::string filename, float pos_x, float pos_y,
 
   setState(backup_state);
 }
-void Renderer::bindTexture(Texture *texture, GLenum tex_slot) {
-  if (texture != nullptr && texture->id != 0) {
+void Renderer::bindTexture(GLuint texture_id, GLenum tex_slot) {
+  if (texture_id != 0) {
     glActiveTexture(tex_slot);
-    glBindTexture(GL_TEXTURE_2D, texture->id);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
   } else {
     glActiveTexture(tex_slot);
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -155,23 +217,33 @@ void Renderer::draw() {
   Shader *depthprepass = _shaderCache.getShader("depthprepass");
   Shader *lightculling = _shaderCache.getShader("lightculling");
   Shader *shading = _shaderCache.getShader("shading");
+  Shader *def = _shaderCache.getShader("default");
 
   glViewport(0, 0, _width, _height);
 
   // Depth prepass
   // Bind the framebuffer and render scene geometry
-  glBindFramebuffer(GL_FRAMEBUFFER, depthmap_fbo);
+  glBindFramebuffer(GL_FRAMEBUFFER, depthpass_fbo);
   glClear(GL_DEPTH_BUFFER_BIT);
-
   switchDepthTestState(true);
+  switchDepthTestFunc(DepthTestFunc::Less);
+
   switchShader(depthprepass->id, current_shader_id);
   for (const auto &attrib : this->_attribs) {
-    setState(attrib.state);
-    updateUniforms(attrib, depthprepass->id);
-    drawVAOs(attrib.vaos, attrib.state.primitiveMode);
+    if (attrib.alpha_mask == false) {
+      updateUniforms(attrib, depthprepass->id);
+      drawVAOs(attrib.vaos, attrib.state.primitiveMode);
+    }
   }
 
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindFramebuffer(GL_READ_FRAMEBUFFER, depthpass_fbo);
+  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, lightpass_fbo);
+  glBlitFramebuffer(0, 0, _width, _height, 0, 0, _width, _height,
+                    GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, lightpass_fbo);
+  switchDepthTestFunc(DepthTestFunc::Equal);
+  glClear(GL_COLOR_BUFFER_BIT);
 
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_lights);
   GLvoid *lights_ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
@@ -188,7 +260,7 @@ void Renderer::draw() {
 
   glActiveTexture(GL_TEXTURE0);
   setUniform(glGetUniformLocation(lightculling->id, "depthmap"), 0);
-  glBindTexture(GL_TEXTURE_2D, depthmap_id);
+  glBindTexture(GL_TEXTURE_2D, depthpass_texture_depth_id);
 
   glDispatchCompute(workgroup_x, workgroup_y, 1);
   glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
@@ -212,15 +284,28 @@ void Renderer::draw() {
 
     updateUniforms(attrib, shading->id);
 
-    bindTexture(attrib.albedo, GL_TEXTURE0);
-    bindTexture(attrib.metallic, GL_TEXTURE0 + 1);
-    bindTexture(attrib.roughness, GL_TEXTURE0 + 2);
-    bindTexture(attrib.normal, GL_TEXTURE0 + 3);
+    bindTexture(attrib.albedo->id, GL_TEXTURE0);
+    bindTexture(attrib.metallic->id, GL_TEXTURE0 + 1);
+    bindTexture(attrib.roughness->id, GL_TEXTURE0 + 2);
+    bindTexture(attrib.normal->id, GL_TEXTURE0 + 3);
 
     drawVAOs(attrib.vaos, attrib.state.primitiveMode);
   }
 
-  setState(_state);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  switchDepthTestState(false);
+  glClear(GL_COLOR_BUFFER_BIT);
+  switchShader(def->id, current_shader_id);
+  setUniform(glGetUniformLocation(def->id, "hdr_tex"), 4);
+
+  bindTexture(lightpass_texture_hdr_id, GL_TEXTURE0 + 4);
+
+  glBindVertexArray(_vao_quad->vao);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glDrawArrays(GL_TRIANGLES, 0, 6);
+
+  setState(backup_state);
+
   glBindVertexArray(0);
 }
 
@@ -251,21 +336,28 @@ void Renderer::update(const Env &env) {
 }
 
 void Renderer::updateRessources() {
-  // Rebuild ressources dependent on the framebuffer size
-  glBindTexture(GL_TEXTURE_2D, depthmap_id);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _width, _height, 0,
-               GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-
   GLuint workgroup_x = (_width + (_width % TILE_SIZE)) / TILE_SIZE;
   GLuint workgroup_y = (_height + (_height % TILE_SIZE)) / TILE_SIZE;
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_visible_lights);
   glBufferData(GL_SHADER_STORAGE_BUFFER,
                sizeof(int) * workgroup_x * workgroup_y * 32, NULL,
                GL_DYNAMIC_DRAW);
+
+  glBindTexture(GL_TEXTURE_2D, depthpass_texture_depth_id);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _width, _height, 0,
+               GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+
+  glBindTexture(GL_TEXTURE_2D, lightpass_texture_hdr_id);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, _width, _height, 0, GL_RGBA,
+               GL_FLOAT, NULL);
+
+  glBindTexture(GL_TEXTURE_2D, lightpass_texture_normal_id);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, _width, _height, 0, GL_RGB,
+               GL_FLOAT, NULL);
+
+  glBindTexture(GL_TEXTURE_2D, lightpass_texture_depth_id);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _width, _height, 0,
+               GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 }
 
 void Renderer::flushAttribs() { this->_attribs.clear(); }

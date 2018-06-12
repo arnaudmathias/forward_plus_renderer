@@ -32,6 +32,8 @@ class Mesh {
 
   Material material;
 
+  bool alpha_mask = false;
+
  private:
   Mesh();
 };

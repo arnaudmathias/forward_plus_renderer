@@ -21,6 +21,9 @@ Game::Game(void) {
     attrib.normal = new Texture(mesh.bump_texname);
     attrib.roughness = new Texture(mesh.roughness_texname);
     attrib.metallic = new Texture(mesh.metallic_texname);
+
+    attrib.alpha_mask = mesh.alpha_mask;
+
     attrib.vaos.push_back(new VAO(vertices));
     attribs.push_back(attrib);
   }

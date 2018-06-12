@@ -23,13 +23,13 @@ Mesh& Mesh::operator=(Mesh const& rhs) {
     displacement_texname = rhs.displacement_texname;
     alpha_texname = rhs.alpha_texname;
 
-   roughness_texname = rhs.roughness_texname;
-   metallic_texname = rhs.metallic_texname;
-   sheen_texname = rhs.sheen_texname;
-   emissive_texname = rhs.emissive_texname;
-   normal_texname = rhs.normal_texname;
+    roughness_texname = rhs.roughness_texname;
+    metallic_texname = rhs.metallic_texname;
+    sheen_texname = rhs.sheen_texname;
+    emissive_texname = rhs.emissive_texname;
+    normal_texname = rhs.normal_texname;
 
-   material = rhs.material;
+    material = rhs.material;
   }
   return (*this);
 }
@@ -98,6 +98,10 @@ Model::Model(const std::string filename) {
     mesh.material.clearcoat_roughness = material.clearcoat_roughness;
     mesh.material.anisotropy = material.anisotropy;
     mesh.material.anisotropy_rotation = material.anisotropy_rotation;
+
+    if (material.alpha_texname.empty() == false) {
+      mesh.alpha_mask = true;
+    }
 
     meshes.push_back(mesh);
   }
@@ -169,7 +173,6 @@ Model::Model(const std::string filename) {
     }
   }
   // Sort vertices by material
-  std::cout << "material_count: " << materials.size() << std::endl;
   for (size_t material_id = 0; material_id < materials.size(); material_id++) {
     int vertexCount = 0;
     meshes[material_id].vertexOffset = vertices.size();

@@ -9,6 +9,10 @@ struct VAO {
   VAO(const std::vector<Vertex>& vertices,
       const std::vector<unsigned int>& indices);
 
+  VAO(const std::vector<glm::vec2>& positions);
+  VAO(const std::vector<glm::vec2>& positions,
+      const std::vector<unsigned int>& indices);
+
   VAO(const std::vector<glm::vec3>& positions);
   VAO(const std::vector<glm::vec3>& positions,
       const std::vector<unsigned int>& indices);
