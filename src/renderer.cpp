@@ -73,7 +73,6 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
   }
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  GL_DUMP_ERROR("renderer ctor");
 
   glGenBuffers(1, &ubo_lights);
   glBindBuffer(GL_UNIFORM_BUFFER, ubo_lights);
@@ -89,12 +88,69 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
   glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo_id);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-  _vao_quad = new VAO({{-1.0f, 1.0f, 0.0, 0.0},
-                       {-1.0f, -1.0f, 0.0, 1.0},
-                       {1.0f, -1.0f, 1.0, 1.0},
-                       {-1.0f, 1.0f, 0.0, 0.0},
-                       {1.0f, -1.0f, 1.0, 1.0},
-                       {1.0f, 1.0f, 1.0, 0.0}});
+  _vao_quad = new VAO({{-1.0f, 1.0f, 0.0f, 0.0f},
+                       {-1.0f, -1.0f, 0.0f, 1.0f},
+                       {1.0f, -1.0f, 1.0f, 1.0f},
+                       {-1.0f, 1.0f, 0.0f, 0.0f},
+                       {1.0f, -1.0f, 1.0f, 1.0f},
+                       {1.0f, 1.0f, 1.0f, 0.0f}});
+
+  std::uniform_real_distribution<float> random(0.0f, 1.0f);
+  std::default_random_engine generator;
+
+  for (unsigned int i = 0; i < 64; ++i) {
+    glm::vec3 sample(random(generator) * 2.0f - 1.0f,
+                     random(generator) * 2.0f - 1.0f, random(generator));
+    sample = glm::normalize(sample);
+    sample *= random(generator);
+    float scale = static_cast<float>(i) / 64.0f;
+    scale = glm::lerp(0.1f, 1.0f, scale * scale);
+    sample *= scale;
+    _ssao_kernel.push_back(glm::vec4(sample, 1.0f));
+  }
+
+  std::vector<glm::vec3> ssao_noise;
+  for (unsigned int i = 0; i < 16; i++) {
+    glm::vec3 noise(random(generator) * 2.0 - 1.0,
+                    random(generator) * 2.0 - 1.0, 0.0f);
+    _ssao_noise.push_back(noise);
+  }
+
+  glGenTextures(1, &ssao_texture_noise_id);
+  glBindTexture(GL_TEXTURE_2D, ssao_texture_noise_id);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, 4, 4, 0, GL_RGB, GL_FLOAT,
+               &_ssao_noise[0]);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  glGenFramebuffers(1, &ssaopass_fbo);
+  glBindFramebuffer(GL_FRAMEBUFFER, ssaopass_fbo);
+
+  glGenTextures(1, &ssaopass_texture_color_id);
+  glBindTexture(GL_TEXTURE_2D, ssaopass_texture_color_id);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, _width, _height, 0, GL_RGB, GL_FLOAT,
+               NULL);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                         ssaopass_texture_color_id, 0);
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+    std::cout << "Could not validate framebuffer" << std::endl;
+  }
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  glGenBuffers(1, &ssao_ubo);
+  glBindBuffer(GL_UNIFORM_BUFFER, ssao_ubo);
+  glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::vec4) * 64, &_ssao_kernel[0],
+               GL_DYNAMIC_DRAW);
+  glBindBufferBase(GL_UNIFORM_BUFFER, 2, ssao_ubo);
+  glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+  GL_DUMP_ERROR("renderer ctor");
 }
 
 Renderer::Renderer(Renderer const &src) { *this = src; }
@@ -174,6 +230,8 @@ void Renderer::switchShader(GLuint shader_id, int &current_shader_id) {
     setUniform(glGetUniformLocation(shader_id, "P"), uniforms.proj);
     setUniform(glGetUniformLocation(shader_id, "V"), uniforms.view);
     setUniform(glGetUniformLocation(shader_id, "VP"), uniforms.view_proj);
+    setUniform(glGetUniformLocation(shader_id, "invVP"),
+               uniforms.inv_view_proj);
     setUniform(glGetUniformLocation(shader_id, "view_pos"), uniforms.view_pos);
     setUniform(glGetUniformLocation(shader_id, "num_lights"), NUM_LIGHTS);
     setUniform(glGetUniformLocation(shader_id, "screen_size"),
@@ -190,10 +248,6 @@ void Renderer::updateUniforms(const Attrib &attrib, const int shader_id) {
     setUniform(glGetUniformLocation(shader_id, "MV"),
                uniforms.view * attrib.model);
     setUniform(glGetUniformLocation(shader_id, "M"), attrib.model);
-    setUniform(glGetUniformLocation(shader_id, "albedo_tex"), 0);
-    setUniform(glGetUniformLocation(shader_id, "metallic_tex"), 1);
-    setUniform(glGetUniformLocation(shader_id, "roughness_tex"), 2);
-    setUniform(glGetUniformLocation(shader_id, "normal_tex"), 3);
   }
 }
 
@@ -205,21 +259,24 @@ void Renderer::draw() {
   Shader *lightculling = _shaderCache.getShader("lightculling");
   Shader *shading = _shaderCache.getShader("shading");
   Shader *def = _shaderCache.getShader("default");
+  Shader *ssao = _shaderCache.getShader("ssao");
 
   glViewport(0, 0, _width, _height);
 
   // Depth prepass
-  // Bind the framebuffer and render scene geometry
-  glBindFramebuffer(GL_FRAMEBUFFER, depthpass_fbo);
-  glClear(GL_DEPTH_BUFFER_BIT);
-  switchDepthTestState(true);
-  switchDepthTestFunc(DepthTestFunc::Less);
+  // Bind the framebuffer and render opaque scene geometry
+  {
+    glBindFramebuffer(GL_FRAMEBUFFER, depthpass_fbo);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    switchDepthTestState(true);
+    switchDepthTestFunc(DepthTestFunc::Less);
 
-  switchShader(depthprepass->id, current_shader_id);
-  for (const auto &attrib : this->_attribs) {
-    if (attrib.alpha_mask == false) {
-      updateUniforms(attrib, depthprepass->id);
-      drawVAOs(attrib.vaos, attrib.state.primitiveMode);
+    switchShader(depthprepass->id, current_shader_id);
+    for (const auto &attrib : this->_attribs) {
+      if (attrib.alpha_mask == false) {
+        updateUniforms(attrib, depthprepass->id);
+        drawVAOs(attrib.vaos, attrib.state.primitiveMode);
+      }
     }
   }
 
@@ -228,54 +285,86 @@ void Renderer::draw() {
   glBlitFramebuffer(0, 0, _width, _height, 0, 0, _width, _height,
                     GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
-  glBindFramebuffer(GL_FRAMEBUFFER, lightpass_fbo);
-  switchDepthTestFunc(DepthTestFunc::Equal);
-  glClear(GL_COLOR_BUFFER_BIT);
+  {
+    glBindFramebuffer(GL_FRAMEBUFFER, lightpass_fbo);
+    switchDepthTestFunc(DepthTestFunc::Equal);
+    glClear(GL_COLOR_BUFFER_BIT);
 
-  switchShader(shading->id, current_shader_id);
+    switchShader(shading->id, current_shader_id);
 
-  glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo_lights);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo_lights);
 
-  glBindBuffer(GL_UNIFORM_BUFFER, ubo_lights);
-  GLvoid *ubo_light_ptr = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-  memcpy(ubo_light_ptr, &lights_data, sizeof(LightSSBO));
-  glUnmapBuffer(GL_UNIFORM_BUFFER);
-
-  glActiveTexture(GL_TEXTURE0 + 10);
-  setUniform(glGetUniformLocation(shading->id, "textures"), 10);
-  glBindTexture(GL_TEXTURE_2D_ARRAY, uniforms.texture_array->id);
-  for (const auto &attrib : this->_attribs) {
-    ubo.material = attrib.material;
-
-    glBindBuffer(GL_UNIFORM_BUFFER, ubo_id);
-    GLvoid *ubo_ptr = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-    memcpy(ubo_ptr, &ubo, sizeof(UBO));
+    glBindBuffer(GL_UNIFORM_BUFFER, ubo_lights);
+    GLvoid *ubo_light_ptr = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+    memcpy(ubo_light_ptr, &lights_data, sizeof(LightSSBO));
     glUnmapBuffer(GL_UNIFORM_BUFFER);
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo_id);
+    glActiveTexture(GL_TEXTURE0 + 0);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, uniforms.texture_array->id);
+    setUniform(glGetUniformLocation(shading->id, "textures"), 0);
 
-    updateUniforms(attrib, shading->id);
-    setUniform(glGetUniformLocation(shading->id, "albedo_tex"), attrib.albedo);
-    setUniform(glGetUniformLocation(shading->id, "metallic_tex"),
-               attrib.metallic);
-    setUniform(glGetUniformLocation(shading->id, "roughness_tex"),
-               attrib.roughness);
-    setUniform(glGetUniformLocation(shading->id, "normal_tex"), attrib.normal);
+    for (const auto &attrib : this->_attribs) {
+      ubo.material = attrib.material;
 
-    drawVAOs(attrib.vaos, attrib.state.primitiveMode);
+      glBindBuffer(GL_UNIFORM_BUFFER, ubo_id);
+      GLvoid *ubo_ptr = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+      memcpy(ubo_ptr, &ubo, sizeof(UBO));
+      glUnmapBuffer(GL_UNIFORM_BUFFER);
+
+      glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo_id);
+
+      updateUniforms(attrib, shading->id);
+      setUniform(glGetUniformLocation(shading->id, "albedo_tex"),
+                 attrib.albedo);
+      setUniform(glGetUniformLocation(shading->id, "metallic_tex"),
+                 attrib.metallic);
+      setUniform(glGetUniformLocation(shading->id, "roughness_tex"),
+                 attrib.roughness);
+      setUniform(glGetUniformLocation(shading->id, "normal_tex"),
+                 attrib.normal);
+
+      drawVAOs(attrib.vaos, attrib.state.primitiveMode);
+    }
   }
 
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  switchDepthTestState(false);
-  glClear(GL_COLOR_BUFFER_BIT);
-  switchShader(def->id, current_shader_id);
-  setUniform(glGetUniformLocation(def->id, "hdr_tex"), 4);
+  // SSBO
+  {
+    glBindFramebuffer(GL_FRAMEBUFFER, ssaopass_fbo);
+    switchDepthTestState(false);
+    glClear(GL_COLOR_BUFFER_BIT);
+    switchShader(ssao->id, current_shader_id);
+    glUniformBlockBinding(ssao->id,
+                          glGetUniformBlockIndex(ssao->id, "ssbo_data"), 2);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 2, ssao_ubo);
+    setUniform(glGetUniformLocation(ssao->id, "depth_tex"), 1);
+    setUniform(glGetUniformLocation(ssao->id, "normal_tex"), 2);
+    setUniform(glGetUniformLocation(ssao->id, "noise_tex"), 3);
 
-  bindTexture(lightpass_texture_hdr_id, GL_TEXTURE0 + 4);
+    bindTexture(lightpass_texture_depth_id, GL_TEXTURE0 + 1);
+    bindTexture(lightpass_texture_normal_id, GL_TEXTURE0 + 2);
+    bindTexture(ssao_texture_noise_id, GL_TEXTURE0 + 3);
 
-  glBindVertexArray(_vao_quad->vao);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(_vao_quad->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+  }
+
+  // Assembly
+  {
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    switchDepthTestState(false);
+    glClear(GL_COLOR_BUFFER_BIT);
+    switchShader(def->id, current_shader_id);
+    setUniform(glGetUniformLocation(def->id, "hdr_tex"), 4);
+    setUniform(glGetUniformLocation(def->id, "ssao_tex"), 5);
+
+    bindTexture(lightpass_texture_hdr_id, GL_TEXTURE0 + 4);
+    bindTexture(ssaopass_texture_color_id, GL_TEXTURE0 + 5);
+
+    glBindVertexArray(_vao_quad->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+  }
 
   setState(backup_state);
 

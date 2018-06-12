@@ -64,6 +64,7 @@ void Game::render(const Env& env, render::Renderer& renderer) {
   renderer.uniforms.view = _camera->view;
   renderer.uniforms.proj = _camera->proj;
   renderer.uniforms.view_proj = _camera->proj * _camera->view;
+  renderer.uniforms.inv_view_proj = glm::inverse(renderer.uniforms.view_proj);
   renderer.uniforms.view_pos = _camera->pos;
   renderer.uniforms.time = env.getAbsoluteTime();
   renderer.uniforms.screen_size =

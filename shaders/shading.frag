@@ -169,7 +169,7 @@ void main() {
     }
     vec3 ambient = vec3(0.03) * albedo;
     vec3 color = ambient + lo;
-    //out_hdr = vec4(albedo, 1.0f);
     out_hdr = vec4(color, 1.0f);
+    //out_hdr = vec4(albedo, 1.0f);
     out_normal = normal;
 }

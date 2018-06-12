@@ -1,6 +1,7 @@
 #pragma once
 #include <algorithm>
 #include <map>
+#include <random>
 #include <unordered_map>
 #include <vector>
 #include "env.hpp"
@@ -85,6 +86,7 @@ struct Uniforms {
   glm::mat4 proj;
   glm::mat4 ortho;
   glm::mat4 view_proj;
+  glm::mat4 inv_view_proj;
   glm::ivec2 screen_size;
   glm::vec3 view_pos;
   float time = 0;
@@ -148,6 +150,11 @@ class Renderer {
   GLuint lightpass_texture_normal_id = 0;
   GLuint lightpass_texture_depth_id = 0;
 
+  GLuint ssaopass_fbo = 0;
+  GLuint ssaopass_texture_color_id = 0;
+  GLuint ssao_texture_noise_id = 0;
+  GLuint ssao_ubo = 0;
+
   LightSSBO lights_data = {};
   GLuint ubo_lights = 0;
 
@@ -163,6 +170,9 @@ class Renderer {
 
   TextRenderer _textRenderer;
   UiRenderer _uiRenderer;
+
+  std::vector<glm::vec4> _ssao_kernel;
+  std::vector<glm::vec3> _ssao_noise;
 
   void updateRessources();
   void drawVAOs(const std::vector<VAO*>& vaos, PrimitiveMode primitive_mode);
