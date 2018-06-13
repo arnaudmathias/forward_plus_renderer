@@ -155,6 +155,9 @@ class Renderer {
   GLuint ssao_texture_noise_id = 0;
   GLuint ssao_ubo = 0;
 
+  GLuint ssaoblurpass_fbo = 0;
+  GLuint ssaoblurpass_texture_color_id = 0;
+
   LightSSBO lights_data = {};
   GLuint ubo_lights = 0;
 
