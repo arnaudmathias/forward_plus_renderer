@@ -241,6 +241,9 @@ void Renderer::draw() {
   memcpy(ubo_light_ptr, &lights_data, sizeof(LightSSBO));
   glUnmapBuffer(GL_UNIFORM_BUFFER);
 
+  glActiveTexture(GL_TEXTURE0 + 10);
+  setUniform(glGetUniformLocation(shading->id, "textures"), 10);
+  glBindTexture(GL_TEXTURE_2D_ARRAY, uniforms.texture_array->id);
   for (const auto &attrib : this->_attribs) {
     ubo.material = attrib.material;
 
@@ -252,11 +255,12 @@ void Renderer::draw() {
     glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo_id);
 
     updateUniforms(attrib, shading->id);
-
-    bindTexture(attrib.albedo->id, GL_TEXTURE0);
-    bindTexture(attrib.metallic->id, GL_TEXTURE0 + 1);
-    bindTexture(attrib.roughness->id, GL_TEXTURE0 + 2);
-    bindTexture(attrib.normal->id, GL_TEXTURE0 + 3);
+    setUniform(glGetUniformLocation(shading->id, "albedo_tex"), attrib.albedo);
+    setUniform(glGetUniformLocation(shading->id, "metallic_tex"),
+               attrib.metallic);
+    setUniform(glGetUniformLocation(shading->id, "roughness_tex"),
+               attrib.roughness);
+    setUniform(glGetUniformLocation(shading->id, "normal_tex"), attrib.normal);
 
     drawVAOs(attrib.vaos, attrib.state.primitiveMode);
   }

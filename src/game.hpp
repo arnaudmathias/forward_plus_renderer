@@ -17,6 +17,7 @@ class Game {
  private:
   bool _debugMode = false;
   Camera* _camera = nullptr;
+  TextureArray* _texture_array = nullptr;
   std::vector<VAO*> vaos;
   std::vector<render::Attrib> attribs;
 
