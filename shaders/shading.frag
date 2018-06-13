@@ -62,10 +62,11 @@ uniform int num_lights;
 uniform int workgroup_x;
 uniform int debug;
 
-uniform sampler2D albedo_tex;
-uniform sampler2D metallic_tex;
-uniform sampler2D roughness_tex;
-uniform sampler2D normal_tex;
+uniform sampler2DArray textures;
+uniform int albedo_tex;
+uniform int metallic_tex;
+uniform int roughness_tex;
+uniform int normal_tex;
 
 float get_diffuse(vec3 light_dir, vec3 normal) {
     float diff = max(dot(light_dir, normal), 0.0);
@@ -132,14 +133,14 @@ void main() {
 
     vec3 ts_view_dir = normalize(vs_in.ts_view_pos - vs_in.ts_frag_pos);
 
-    vec4 albedo4 = texture(albedo_tex, vs_in.frag_uv);
+    vec4 albedo4 = texture(textures, vec3(vs_in.frag_uv, float(albedo_tex)));
     vec3 albedo = pow(albedo4.rgb, vec3(2.2));
     float alpha = albedo4.a;
 
-    float metallic = texture(metallic_tex, vs_in.frag_uv).r;
-    float roughness = texture(roughness_tex, vs_in.frag_uv).r;
+    float metallic = texture(textures, vec3(vs_in.frag_uv, float(metallic_tex))).r;
+    float roughness = texture(textures, vec3(vs_in.frag_uv, float(roughness_tex))).r;
 
-    vec3 normal = texture(normal_tex, vs_in.frag_uv).rgb;
+    vec3 normal = texture(textures, vec3(vs_in.frag_uv, float(normal_tex))).rgb;
     normal = normalize(normal * 2.0 - 1.0);
 
     vec3 f0 = vec3(0.04); 
@@ -184,7 +185,6 @@ void main() {
 	float shade = float(count) / 32.0;
 	color = vec3(shade);
     }
-    //out_hdr = vec4(color, 1.0f);
-    out_hdr = vec4(albedo, 1.0f);
+    out_hdr = vec4(color, 1.0f);
     out_normal = normal;
 }

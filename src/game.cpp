@@ -5,6 +5,15 @@ Game::Game(void) {
       new Camera(glm::vec3(0.0f, 5.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 
   Model model = Model("data/sponza/sponza.obj");
+  std::vector<std::string> texture_names;
+  for (const auto& mesh : model.meshes) {
+    texture_names.push_back(mesh.diffuse_texname);
+    texture_names.push_back(mesh.bump_texname);
+    texture_names.push_back(mesh.roughness_texname);
+    texture_names.push_back(mesh.metallic_texname);
+  }
+  _texture_array = new TextureArray(texture_names);
+
   for (const auto& mesh : model.meshes) {
     std::vector<Vertex> vertices;
     for (size_t i = mesh.vertexOffset;
@@ -17,10 +26,10 @@ Game::Game(void) {
     attrib.model = glm::scale(glm::vec3(0.01f));
     attrib.material = mesh.material;
 
-    attrib.albedo = new Texture(mesh.diffuse_texname);
-    attrib.normal = new Texture(mesh.bump_texname);
-    attrib.roughness = new Texture(mesh.roughness_texname);
-    attrib.metallic = new Texture(mesh.metallic_texname);
+    attrib.albedo = _texture_array->getTextureIndex(mesh.diffuse_texname);
+    attrib.normal = _texture_array->getTextureIndex(mesh.bump_texname);
+    attrib.roughness = _texture_array->getTextureIndex(mesh.roughness_texname);
+    attrib.metallic = _texture_array->getTextureIndex(mesh.metallic_texname);
 
     attrib.alpha_mask = mesh.alpha_mask;
 
@@ -52,6 +61,7 @@ void Game::update(Env& env) {
 void Game::render(const Env& env, render::Renderer& renderer) {
   float fwidth = static_cast<float>(renderer.getScreenWidth());
   float fheight = static_cast<float>(renderer.getScreenHeight());
+  renderer.uniforms.texture_array = _texture_array;
   renderer.uniforms.view = _camera->view;
   renderer.uniforms.proj = _camera->proj;
   renderer.uniforms.view_proj = _camera->proj * _camera->view;

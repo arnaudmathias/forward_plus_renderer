@@ -2,23 +2,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-Texture::Texture(int width, int height)
-    : id(0), filename("renderbuffer"), width(width), height(height) {
-  glGenTextures(1, &this->id);
-  glBindTexture(GL_TEXTURE_2D, this->id);
-
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
-               GL_UNSIGNED_BYTE, NULL);
-
-  glBindTexture(GL_TEXTURE_2D, 0);
-}
-
 Texture::Texture(std::string filename) : id(0), filename(filename) {
   int texChannels;
   stbi_set_flip_vertically_on_load(true);
@@ -120,6 +103,62 @@ Texture::Texture(const std::vector<std::string>& textures) : id(0) {
 }
 
 Texture::~Texture() {
+  if (this->id != 0) {
+    glDeleteTextures(1, &this->id);
+  }
+}
+
+TextureArray::TextureArray(const std::vector<std::string>& textures) {
+  std::set<std::string> texture_set;
+
+  for (const auto& texture : textures) {
+    texture_set.insert(texture);
+  }
+  stbi_set_flip_vertically_on_load(true);
+  int zoffset = 0;
+  for (auto it : texture_set) {
+    int tex_channels;
+    stbi_uc* pixels =
+        stbi_load(it.c_str(), &width, &height, &tex_channels, STBI_rgb);
+    if (pixels != nullptr) {
+      if (id == 0) {
+        glGenTextures(1, &id);
+        glBindTexture(GL_TEXTURE_2D_ARRAY, id);
+        glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB8, width, height,
+                     static_cast<GLuint>(texture_set.size()), 0, GL_RGB,
+                     GL_UNSIGNED_BYTE, NULL);
+      }
+      glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, zoffset, width, height, 1,
+                      GL_RGB, GL_UNSIGNED_BYTE, pixels);
+      glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER,
+                      GL_NEAREST_MIPMAP_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+      glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+
+      stbi_image_free(pixels);
+      _lookup_table.emplace(it, zoffset);
+      zoffset++;
+    }
+  }
+  glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+int TextureArray::getTextureIndex(std::string texture_name) {
+  auto res = _lookup_table.find(texture_name);
+  if (res != _lookup_table.end()) {
+    return (res->second);
+  }
+  std::cout << "unable to find: " << texture_name << std::endl;
+  return (-1);
+}
+
+TextureArray::~TextureArray() {
   if (this->id != 0) {
     glDeleteTextures(1, &this->id);
   }

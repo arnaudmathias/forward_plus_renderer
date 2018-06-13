@@ -80,6 +80,7 @@ struct LightSSBO {
 };
 
 struct Uniforms {
+  TextureArray* texture_array;
   glm::mat4 view;
   glm::mat4 proj;
   glm::mat4 ortho;
@@ -96,11 +97,11 @@ struct Attrib {
   std::vector<VAO*> vaos;
   Material material;
 
-  Texture* albedo = nullptr;
-  Texture* normal = nullptr;
-  Texture* metallic = nullptr;
-  Texture* roughness = nullptr;
-  Texture* opacity = nullptr;
+  int albedo = -1;
+  int normal = -1;
+  int metallic = -1;
+  int roughness = -1;
+  int opacity = -1;
 
   bool alpha_mask = false;
   RenderState state;

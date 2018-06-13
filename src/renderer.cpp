@@ -268,9 +268,12 @@ void Renderer::draw() {
   switchShader(shading->id, current_shader_id);
   setUniform(glGetUniformLocation(shading->id, "workgroup_x"),
              static_cast<int>(workgroup_x));
-  for (const auto &attrib : this->_attribs) {
-    setState(attrib.state);
 
+  glActiveTexture(GL_TEXTURE0 + 10);
+
+  setUniform(glGetUniformLocation(shading->id, "textures"), 10);
+  glBindTexture(GL_TEXTURE_2D_ARRAY, uniforms.texture_array->id);
+  for (const auto &attrib : this->_attribs) {
     ubo.material = attrib.material;
 
     glBindBuffer(GL_UNIFORM_BUFFER, ubo_id);
@@ -278,16 +281,19 @@ void Renderer::draw() {
     memcpy(ubo_ptr, &ubo, sizeof(UBO));
     glUnmapBuffer(GL_UNIFORM_BUFFER);
 
+    updateUniforms(attrib, shading->id);
+    setUniform(glGetUniformLocation(shading->id, "albedo_tex"), attrib.albedo);
+    setUniform(glGetUniformLocation(shading->id, "metallic_tex"),
+               attrib.metallic);
+    setUniform(glGetUniformLocation(shading->id, "roughness_tex"),
+               attrib.roughness);
+    setUniform(glGetUniformLocation(shading->id, "normal_tex"), attrib.normal);
+
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_lights);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_visible_lights);
     glBindBufferBase(GL_UNIFORM_BUFFER, 2, ubo_id);
 
     updateUniforms(attrib, shading->id);
-
-    bindTexture(attrib.albedo->id, GL_TEXTURE0);
-    bindTexture(attrib.metallic->id, GL_TEXTURE0 + 1);
-    bindTexture(attrib.roughness->id, GL_TEXTURE0 + 2);
-    bindTexture(attrib.normal->id, GL_TEXTURE0 + 3);
 
     drawVAOs(attrib.vaos, attrib.state.primitiveMode);
   }
