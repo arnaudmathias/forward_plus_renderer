@@ -30,7 +30,8 @@ Shader::Shader(std::string shader) : id(-1) {
   glGetProgramiv(id, GL_LINK_STATUS, &err);
   if (GL_TRUE != err) {
     std::cerr << "Link error: (" << _shaders[0].filename << ", "
-              << _shaders[1].filename << ", " << _shaders[2].filename << ")\n";
+              << _shaders[1].filename << ", " << _shaders[2].filename << ","
+              << _shaders[3].filename << ")\n";
     printLinkError(id);
   }
 }

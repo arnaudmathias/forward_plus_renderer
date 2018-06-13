@@ -1,7 +1,7 @@
 #version 410 core
 
 const int kernel_size = 64;
-const float radius = 0.5;
+const float radius = 1.5;
 const float bias = 0.025;
 
 in vec2 frag_uv;
