@@ -2,7 +2,11 @@
 
 Shader::Shader(Shader const &src) { *this = src; }
 
-Shader::~Shader(void) {}
+Shader::~Shader(void) {
+  if (id != 0) {
+    glDeleteShader(id);
+  }
+}
 
 Shader &Shader::operator=(Shader const &rhs) {
   if (this != &rhs) {
