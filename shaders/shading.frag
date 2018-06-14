@@ -151,7 +151,7 @@ void main() {
 	float attenuation = get_attenuation(lights[i].radius, dist);
 	//float attenuation = 1.0 / (dist * dist);	
 	
-	vec3 radiance = lights[i].color.rgb * attenuation;
+	vec3 radiance = lights[i].color.rgb * attenuation * lights[i].intensity;
 	float ndf = distribution_ggx(normal, ts_halfway, roughness);       
 	float g = geometry_smith(normal, ts_view_dir, ts_light_dir, roughness); 
 	vec3 f = fresnel_schlick(max(dot(ts_halfway, ts_view_dir), 0.0f), f0);
