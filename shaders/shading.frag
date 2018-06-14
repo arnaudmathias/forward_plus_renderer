@@ -156,7 +156,7 @@ void main() {
 
 	    float dist = length(ts_light_pos - vs_in.ts_frag_pos);
 	    float attenuation = get_attenuation(lights[indices].radius, dist);
-	    vec3 radiance = lights[i].color.rgb * attenuation;
+	    vec3 radiance = lights[i].color.rgb * attenuation * lights[i].intensity;
 	    float ndf = distribution_ggx(normal, ts_halfway, roughness);       
 	    float g = geometry_smith(normal, ts_view_dir, ts_light_dir, roughness); 
 	    vec3 f = fresnel_schlick(max(dot(ts_halfway, ts_view_dir), 0.0f), f0);
