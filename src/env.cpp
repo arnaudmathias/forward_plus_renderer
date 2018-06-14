@@ -106,7 +106,7 @@ void Env::setupWindow() {
 }
 
 void Env::setupContext() {
-  glfwSwapInterval(1);
+  glfwSwapInterval(0);
   glEnable(GL_DEBUG_OUTPUT);
   while (glGetError() != GL_NO_ERROR)
     ;  // Flush gl_error
