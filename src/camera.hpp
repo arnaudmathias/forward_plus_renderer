@@ -3,9 +3,8 @@
 #define M_PI 3.14159265358979323846
 #endif
 #include <array>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include "env.hpp"
+#include "forward.hpp"
 
 class Camera {
  public:
@@ -27,6 +26,13 @@ class Camera {
 
   Camera(glm::vec3 pos, glm::vec3 target, int width = 1024, int height = 1024);
   void update(Env &env, float deltaTime);
+
+  void updateView(float deltaTime);
+  void updateDirection(float deltaTime);
+
+  void updateMouse(Env &env, float deltaTime);
+  void updateKeyboard(Env &env, float deltaTime);
+
   void rotate(float hor, float ver);  // in radians
   float getAspectRatio();
 

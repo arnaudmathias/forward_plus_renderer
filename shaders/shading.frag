@@ -46,7 +46,7 @@ struct LightingResult {
 };
 
 layout (std140) uniform light_data {
-    Light lights[1];
+    Light lights[5];
 };
 
 layout (std140) uniform material_data { 
