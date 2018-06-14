@@ -185,6 +185,6 @@ void main() {
 	float shade = float(count) / 32.0;
 	color = vec3(shade);
     }
-    out_hdr = vec4(color, 1.0f);
+    out_hdr = vec4(color, alpha);
     out_normal = normal;
 }

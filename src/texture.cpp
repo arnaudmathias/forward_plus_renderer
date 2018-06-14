@@ -119,17 +119,17 @@ TextureArray::TextureArray(const std::vector<std::string>& textures) {
   for (auto it : texture_set) {
     int tex_channels;
     stbi_uc* pixels =
-        stbi_load(it.c_str(), &width, &height, &tex_channels, STBI_rgb);
+        stbi_load(it.c_str(), &width, &height, &tex_channels, STBI_rgb_alpha);
     if (pixels != nullptr) {
       if (id == 0) {
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_2D_ARRAY, id);
-        glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB8, width, height,
-                     static_cast<GLuint>(texture_set.size()), 0, GL_RGB,
+        glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, width, height,
+                     static_cast<GLuint>(texture_set.size()), 0, GL_RGBA,
                      GL_UNSIGNED_BYTE, NULL);
       }
       glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, zoffset, width, height, 1,
-                      GL_RGB, GL_UNSIGNED_BYTE, pixels);
+                      GL_RGBA, GL_UNSIGNED_BYTE, pixels);
       glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER,
                       GL_NEAREST_MIPMAP_LINEAR);
       glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);

@@ -29,6 +29,8 @@ Mesh& Mesh::operator=(Mesh const& rhs) {
     emissive_texname = rhs.emissive_texname;
     normal_texname = rhs.normal_texname;
 
+    alpha_mask = rhs.alpha_mask;
+
     material = rhs.material;
   }
   return (*this);

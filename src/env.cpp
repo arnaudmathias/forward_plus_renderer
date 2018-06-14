@@ -106,7 +106,7 @@ void Env::setupWindow() {
 }
 
 void Env::setupContext() {
-  glfwSwapInterval(1);
+  glfwSwapInterval(0);
   glEnable(GL_DEBUG_OUTPUT);
   glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
   glDebugMessageCallback(openglCallbackFunction, nullptr);
