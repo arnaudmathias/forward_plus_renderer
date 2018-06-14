@@ -94,7 +94,7 @@ struct Uniforms {
 struct Attrib {
   glm::mat4 model = glm::mat4(1.0f);
   std::string shader_key = "";
-  std::vector<VAO*> vaos;
+  VAO* vao = nullptr;
   Material material;
 
   int albedo = -1;
@@ -167,7 +167,7 @@ class Renderer {
   UiRenderer _uiRenderer;
 
   void updateRessources();
-  void drawVAOs(const std::vector<VAO*>& vaos, PrimitiveMode primitive_mode);
+  void drawVAOs(VAO* vao, PrimitiveMode primitive_mode);
   void switchShader(GLuint shader_id, int& current_shader_id);
   void updateUniforms(const Attrib& attrib, const int shader_id);
   GLenum getGLRenderMode(enum PrimitiveMode mode);

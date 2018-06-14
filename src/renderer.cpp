@@ -98,15 +98,15 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
   glGenBuffers(1, &ubo_id);
   glBindBuffer(GL_UNIFORM_BUFFER, ubo_id);
   glBufferData(GL_UNIFORM_BUFFER, sizeof(UBO), &ubo, GL_DYNAMIC_DRAW);
-  glBindBufferBase(GL_UNIFORM_BUFFER, 2, ubo_id);
+  glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo_id);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-  _vao_quad = new VAO({{-1.0f, 1.0f, 0.0, 0.0},
-                       {-1.0f, -1.0f, 0.0, 1.0},
-                       {1.0f, -1.0f, 1.0, 1.0},
-                       {-1.0f, 1.0f, 0.0, 0.0},
-                       {1.0f, -1.0f, 1.0, 1.0},
-                       {1.0f, 1.0f, 1.0, 0.0}});
+  _vao_quad = new VAO({{-1.0f, 1.0f, 0.0f, 0.0f},
+                       {-1.0f, -1.0f, 0.0f, 1.0f},
+                       {1.0f, -1.0f, 1.0f, 1.0f},
+                       {-1.0f, 1.0f, 0.0f, 0.0f},
+                       {1.0f, -1.0f, 1.0f, 1.0f},
+                       {1.0f, 1.0f, 1.0f, 0.0f}});
 }
 
 Renderer::Renderer(Renderer const &src) { *this = src; }
@@ -197,7 +197,7 @@ void Renderer::switchShader(GLuint shader_id, int &current_shader_id) {
 }
 
 void Renderer::updateUniforms(const Attrib &attrib, const int shader_id) {
-  if (shader_id > 0 && attrib.vaos.size() > 0) {
+  if (shader_id > 0) {
     glm::mat4 mvp = uniforms.view_proj * attrib.model;
     setUniform(glGetUniformLocation(shader_id, "MVP"), mvp);
     setUniform(glGetUniformLocation(shader_id, "MV"),
@@ -222,17 +222,19 @@ void Renderer::draw() {
   glViewport(0, 0, _width, _height);
 
   // Depth prepass
-  // Bind the framebuffer and render scene geometry
-  glBindFramebuffer(GL_FRAMEBUFFER, depthpass_fbo);
-  glClear(GL_DEPTH_BUFFER_BIT);
-  switchDepthTestState(true);
-  switchDepthTestFunc(DepthTestFunc::Less);
+  // Bind the framebuffer and render opaque scene geometry
+  {
+    glBindFramebuffer(GL_FRAMEBUFFER, depthpass_fbo);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    switchDepthTestState(true);
+    switchDepthTestFunc(DepthTestFunc::Less);
 
-  switchShader(depthprepass->id, current_shader_id);
-  for (const auto &attrib : this->_attribs) {
-    if (attrib.alpha_mask == false) {
-      updateUniforms(attrib, depthprepass->id);
-      drawVAOs(attrib.vaos, attrib.state.primitiveMode);
+    switchShader(depthprepass->id, current_shader_id);
+    for (const auto &attrib : this->_attribs) {
+      if (attrib.alpha_mask == false) {
+        updateUniforms(attrib, depthprepass->id);
+        drawVAOs(attrib.vao, attrib.state.primitiveMode);
+      }
     }
   }
 
@@ -295,38 +297,38 @@ void Renderer::draw() {
 
     updateUniforms(attrib, shading->id);
 
-    drawVAOs(attrib.vaos, attrib.state.primitiveMode);
+    drawVAOs(attrib.vao, attrib.state.primitiveMode);
   }
 
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  switchDepthTestState(false);
-  glClear(GL_COLOR_BUFFER_BIT);
-  switchShader(def->id, current_shader_id);
-  setUniform(glGetUniformLocation(def->id, "hdr_tex"), 4);
+  // Assembly
+  {
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    switchDepthTestState(false);
+    glClear(GL_COLOR_BUFFER_BIT);
+    switchShader(def->id, current_shader_id);
+    setUniform(glGetUniformLocation(def->id, "hdr_tex"), 5);
 
-  bindTexture(lightpass_texture_hdr_id, GL_TEXTURE0 + 4);
+    bindTexture(lightpass_texture_hdr_id, GL_TEXTURE0 + 5);
 
-  glBindVertexArray(_vao_quad->vao);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(_vao_quad->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+  }
 
   setState(backup_state);
 
   glBindVertexArray(0);
-}
+}  // namespace render
 
-void Renderer::drawVAOs(const std::vector<VAO *> &vaos,
-                        render::PrimitiveMode primitive_mode) {
+void Renderer::drawVAOs(VAO *vao, render::PrimitiveMode primitive_mode) {
   GLenum mode = getGLRenderMode(primitive_mode);
-  for (const auto &vao : vaos) {
-    if (vao != nullptr) {
-      if (vao->indices_size != 0) {
-        glBindVertexArray(vao->vao);
-        glDrawElements(mode, vao->indices_size, GL_UNSIGNED_INT, 0);
-      } else if (vao->vertices_size != 0) {
-        glBindVertexArray(vao->vao);
-        glDrawArrays(mode, 0, vao->vertices_size);
-      }
+  if (vao != nullptr) {
+    if (vao->indices_size != 0) {
+      glBindVertexArray(vao->vao);
+      glDrawElements(mode, vao->indices_size, GL_UNSIGNED_INT, 0);
+    } else if (vao->vertices_size != 0) {
+      glBindVertexArray(vao->vao);
+      glDrawArrays(mode, 0, vao->vertices_size);
     }
   }
 }
@@ -458,12 +460,6 @@ void Renderer::switchBlendingState(bool blending) {
   }
 }
 
-bool Attrib::operator<(const struct Attrib &rhs) const {
-  if (this->vaos[0] != nullptr && rhs.vaos[0] != nullptr) {
-    return (this->state.depthTest == false);
-  } else {
-    return (true);
-  }
-}
+bool Attrib::operator<(const struct Attrib &rhs) const { return (true); }
 
 }  // namespace render

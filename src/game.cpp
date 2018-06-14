@@ -33,14 +33,24 @@ Game::Game(void) {
 
     attrib.alpha_mask = mesh.alpha_mask;
 
-    attrib.vaos.push_back(new VAO(vertices));
+    attrib.vao = new VAO(vertices);
     attribs.push_back(attrib);
   }
 }
 
 Game::Game(Game const& src) { *this = src; }
 
-Game::~Game(void) { delete _camera; }
+Game::~Game(void) {
+  delete _camera;
+  for (auto& attrib : attribs) {
+    if (attrib.vao != nullptr) {
+      delete attrib.vao;
+    }
+  }
+  if (_texture_array != nullptr) {
+    delete _texture_array;
+  }
+}
 
 Game& Game::operator=(Game const& rhs) {
   if (this != &rhs) {
