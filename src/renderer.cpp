@@ -12,7 +12,7 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
     lights_data.lights[i].position = glm::vec3(-10.0 + i * 10.0, 1.0f, 0.0f);
     lights_data.lights[i].radius = 5.5f;
     lights_data.lights[i].color = glm::vec3(1.0f, 0.0f, 0.0f);
-    lights_data.lights[i].intensity = 1.0f + 2.0f * i;
+    lights_data.lights[i].intensity = 1.0f;
   }
 
   // Gen and setup our depth depth map FBO for the depth prepass
@@ -250,8 +250,17 @@ void Renderer::draw() {
     glUnmapBuffer(GL_UNIFORM_BUFFER);
 
     glActiveTexture(GL_TEXTURE0 + 0);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, uniforms.texture_array->id);
-    setUniform(glGetUniformLocation(shading->id, "textures"), 0);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, uniforms.albedo_array->id);
+    setUniform(glGetUniformLocation(shading->id, "albedo_array"), 0);
+    glActiveTexture(GL_TEXTURE0 + 1);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, uniforms.normal_array->id);
+    setUniform(glGetUniformLocation(shading->id, "normal_array"), 1);
+    glActiveTexture(GL_TEXTURE0 + 2);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, uniforms.metallic_array->id);
+    setUniform(glGetUniformLocation(shading->id, "metallic_array"), 2);
+    glActiveTexture(GL_TEXTURE0 + 3);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, uniforms.roughness_array->id);
+    setUniform(glGetUniformLocation(shading->id, "roughness_array"), 3);
 
     switchBlendingState(false);
     for (const auto &attrib : this->_attribs) {

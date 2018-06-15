@@ -114,22 +114,34 @@ TextureArray::TextureArray(const std::vector<std::string>& textures) {
   for (const auto& texture : textures) {
     texture_set.insert(texture);
   }
+  GLint internal_format = 0;
+  GLenum format = 0;
   stbi_set_flip_vertically_on_load(true);
   int zoffset = 0;
   for (auto it : texture_set) {
     int tex_channels;
     stbi_uc* pixels =
-        stbi_load(it.c_str(), &width, &height, &tex_channels, STBI_rgb_alpha);
+        stbi_load(it.c_str(), &width, &height, &tex_channels, STBI_default);
+
     if (pixels != nullptr) {
       if (id == 0) {
+        if (tex_channels == 1) {
+          internal_format = GL_R8;
+          format = GL_RED;
+        } else if (tex_channels == 4) {
+          internal_format = GL_RGBA8;
+          format = GL_RGBA;
+        } else {
+          assert(0);
+        }
         glGenTextures(1, &id);
         glBindTexture(GL_TEXTURE_2D_ARRAY, id);
-        glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, width, height,
-                     static_cast<GLuint>(texture_set.size()), 0, GL_RGBA,
+        glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, internal_format, width, height,
+                     static_cast<GLuint>(texture_set.size()), 0, format,
                      GL_UNSIGNED_BYTE, NULL);
       }
       glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, zoffset, width, height, 1,
-                      GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+                      format, GL_UNSIGNED_BYTE, pixels);
       glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER,
                       GL_NEAREST_MIPMAP_LINEAR);
       glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
