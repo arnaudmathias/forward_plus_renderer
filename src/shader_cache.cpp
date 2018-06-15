@@ -5,6 +5,7 @@ ShaderCache::ShaderCache(void) {
   _shaders.emplace("shading", new Shader("shaders/shading"));
   _shaders.emplace("depthprepass", new Shader("shaders/depthprepass"));
   _shaders.emplace("lightculling", new Shader("shaders/lightculling"));
+  _shaders.emplace("octahedron", new Shader("shaders/octahedron"));
   _shaders.emplace("text", new Shader("shaders/text"));
 }
 

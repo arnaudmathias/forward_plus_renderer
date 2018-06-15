@@ -163,6 +163,7 @@ class Renderer {
   int _height = 0;
   ShaderCache _shaderCache;
   VAO* _vao_quad = nullptr;
+  VAO* _vao_octahedron = nullptr;
 
   RenderState _state;
 

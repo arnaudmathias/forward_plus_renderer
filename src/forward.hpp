@@ -1,10 +1,11 @@
 #pragma once
 #define TILE_SIZE 16
-#define NUM_LIGHTS 5
+#define NUM_LIGHTS 8
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/random.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/color_space.hpp>
 #include <glm/gtx/euler_angles.hpp>
