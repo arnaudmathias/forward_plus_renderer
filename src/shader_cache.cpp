@@ -7,6 +7,7 @@ ShaderCache::ShaderCache(void) {
   _shaders.emplace("lightculling", new Shader("shaders/lightculling"));
   _shaders.emplace("ssao", new Shader("shaders/ssao"));
   _shaders.emplace("ssaoblur", new Shader("shaders/ssao_blur"));
+  _shaders.emplace("octahedron", new Shader("shaders/octahedron"));
   _shaders.emplace("text", new Shader("shaders/text"));
 }
 

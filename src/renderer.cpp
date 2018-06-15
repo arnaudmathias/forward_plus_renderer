@@ -10,8 +10,10 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
 
   for (int i = 0; i < NUM_LIGHTS; i++) {
     lights_data.lights[i].position = glm::vec3(-10.0 + i * 10.0, 1.0f, 0.0f);
-    lights_data.lights[i].radius = 5.5f;
-    lights_data.lights[i].color = glm::vec3(1.0f, 0.0f, 0.0f);
+    lights_data.lights[i].radius = glm::linearRand(3.5f, 10.0f);
+    lights_data.lights[i].color =
+        glm::vec3(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f),
+                  glm::linearRand(0.0f, 1.0f));
     lights_data.lights[i].intensity = 1.0f;
   }
 
@@ -99,6 +101,14 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
                        {-1.0f, 1.0f, 0.0f, 0.0f},
                        {1.0f, -1.0f, 1.0f, 1.0f},
                        {1.0f, 1.0f, 1.0f, 0.0f}});
+  _vao_octahedron = new VAO(
+      {{0.0f, 1.0f, 0.0f},
+       {0.0f, -1.0f, 0.0f},
+       {0.0f, 0.0f, 1.0f},
+       {1.0f, 0.0f, 0.0f},
+       {-1.0f, 0.0f, 0.0f},
+       {0.0f, 0.0f, -1.0f}},
+      {0, 2, 3, 4, 2, 0, 0, 5, 4, 3, 5, 0, 1, 2, 4, 3, 2, 1, 1, 5, 3, 4, 5, 1});
 
   GL_DUMP_ERROR("renderer ctor");
 }
@@ -118,6 +128,7 @@ Renderer::~Renderer(void) {
   glDeleteFramebuffers(1, &lightpass_fbo);
 
   delete _vao_quad;
+  delete _vao_octahedron;
 }
 
 Renderer &Renderer::operator=(Renderer const &rhs) {
@@ -208,10 +219,10 @@ void Renderer::draw() {
   Shader *depthprepass = _shaderCache.getShader("depthprepass");
   Shader *lightculling = _shaderCache.getShader("lightculling");
   Shader *shading = _shaderCache.getShader("shading");
+  Shader *octahedron = _shaderCache.getShader("octahedron");
   Shader *def = _shaderCache.getShader("default");
 
   glViewport(0, 0, _width, _height);
-
   // Depth prepass
   // Bind the framebuffer and render opaque scene geometry
   {
@@ -243,6 +254,13 @@ void Renderer::draw() {
     switchShader(shading->id, current_shader_id);
 
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo_lights);
+
+    for (int i = 0; i < NUM_LIGHTS; i++) {
+      lights_data.lights[i].position =
+          glm::vec3((-10.0 + i * 2.5) + sin(uniforms.time * (i + 1) * 0.5f),
+                    1.0f, cos(uniforms.time * (i + 1) * 0.5f));
+      lights_data.lights[i].intensity = 1.0f;
+    }
 
     glBindBuffer(GL_UNIFORM_BUFFER, ubo_lights);
     GLvoid *ubo_light_ptr = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
@@ -303,6 +321,21 @@ void Renderer::draw() {
         setUniform(glGetUniformLocation(shading->id, "normal_tex"),
                    attrib.normal);
         drawVAOs(attrib.vao, attrib.state.primitiveMode);
+      }
+    }
+    if (uniforms.debug) {
+      switchDepthTestFunc(DepthTestFunc::Less);
+      switchShader(octahedron->id, current_shader_id);
+      for (const auto &light : lights_data.lights) {
+        setUniform(glGetUniformLocation(octahedron->id, "color"), light.color);
+        glm::mat4 model =
+            glm::translate(light.position) * glm::scale(glm::vec3(0.15f));
+        glm::mat4 mvp = uniforms.view_proj * model;
+        setUniform(glGetUniformLocation(octahedron->id, "MVP"), mvp);
+        glBindVertexArray(_vao_octahedron->vao);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glDrawElements(GL_TRIANGLES, _vao_octahedron->indices_size,
+                       GL_UNSIGNED_INT, 0);
       }
     }
   }
