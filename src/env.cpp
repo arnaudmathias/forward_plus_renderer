@@ -3,38 +3,36 @@
 Env::Env() noexcept : Env(0, 0) {}
 
 Env::Env(unsigned short width, unsigned short height)
-    : width(width),
-      height(height),
-      _frame(0),
-      _window_width(1280),
-      _window_height(720) {
+    : width(width), height(height) {
   if (!glfwInit()) return;
   setupWindowHint();
   std::string window_name = "Forward+ renderer";
   GLFWmonitor *primary_monitor = glfwGetPrimaryMonitor();
   const GLFWvidmode *mode = glfwGetVideoMode(primary_monitor);
   if (width == 0 && height == 0) {
-    this->width = mode->width;
-    this->height = mode->height;
-    window = glfwCreateWindow(this->width, this->height, window_name.c_str(),
-                              primary_monitor, NULL);
-    if (window) {
-      glfwSetWindowMonitor(window, primary_monitor, 0, 0, mode->width,
-                           mode->height, mode->refreshRate);
-    }
+    // Fullscreen
+    width = mode->width;
+    height = mode->height;
+    inputHandler.window_pos_x = 0;
+    inputHandler.window_pos_y = 0;
   } else {
-    _window_width = width;
-    _window_height = height;
-    window = glfwCreateWindow(width, height, window_name.c_str(), NULL, NULL);
-    if (window) {
-      glfwSetWindowMonitor(window, NULL,
-                           (mode->width / 2) - (_window_width / 2),
-                           (mode->height / 2) - (_window_height / 2),
-                           _window_width, _window_height, 0);
-    }
-    inputHandler.mousex = static_cast<float>(_window_width / 2);
-    inputHandler.mousey = static_cast<float>(_window_height / 2);
+    // Windowed
+    _windowed_width = width;
+    _windowed_height = height;
+    inputHandler.window_pos_x = (mode->width / 2) - (_windowed_width / 2);
+    inputHandler.window_pos_y = (mode->height / 2) - (_windowed_height / 2);
+    primary_monitor = NULL;
   }
+  window = glfwCreateWindow(width, height, window_name.c_str(), NULL, NULL);
+  if (window) {
+    glfwSetWindowMonitor(window, primary_monitor, inputHandler.window_pos_x,
+                         inputHandler.window_pos_y, _windowed_width,
+                         _windowed_height, 0);
+  }
+  inputHandler.mousex = static_cast<float>(width / 2);
+  inputHandler.mousey = static_cast<float>(height / 2);
+  inputHandler.window_width = width;
+  inputHandler.window_height = height;
   if (!window) {
     std::cerr << "Could not create window\n";
     glfwTerminate();
@@ -44,14 +42,8 @@ Env::Env(unsigned short width, unsigned short height)
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
     std::cout << "Failed to initialize OpenGL context" << std::endl;
   }
-  int max_uniform_vec = 0;
-  glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &max_uniform_vec);
   std::cout << "OpenGL " << glGetString(GL_VERSION) << std::endl;
   std::cout << "GLSL " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
-  std::cout << "Max uniform vec: " << max_uniform_vec << std::endl;
-
-  inputHandler.mouseDisabled = false;
-
   setupWindow();
   setupContext();
 }
@@ -65,26 +57,47 @@ void Env::toggleFullscreen() {
   if (_fullscreen) {
     glfwSetWindowMonitor(window, primary_monitor, 0, 0, mode->width,
                          mode->height, mode->refreshRate);
-    this->width = mode->width;
-    this->height = mode->height;
+    width = mode->width;
+    height = mode->height;
+
+#if defined(__APPLE__)
     // The mouse virtual position reported by curposPosCallback promptly jump
     // after a window -> fullscreen transition
     // Doesn't happen on fullscreen -> window
     // GLFW bug ?
-    inputHandler.mousex -= (this->_window_width / 2);
-    inputHandler.mousey -= (this->_window_height / 2);
-    this->has_resized = true;
+    ignore_mouse = true;
+#endif
   } else {
-    glfwSetWindowMonitor(window, NULL, (mode->width / 2) - (_window_width / 2),
-                         (mode->height / 2) - (_window_height / 2),
-                         _window_width, _window_height, 0);
-    this->width = _window_width;
-    this->height = _window_height;
+    glfwSetWindowMonitor(window, NULL, inputHandler.window_pos_x,
+                         inputHandler.window_pos_y, _windowed_width,
+                         _windowed_height, 0);
+    width = _windowed_width;
+    height = _windowed_height;
   }
   // Query and update framebuffer size
   int wframe, hframe;
   glfwGetFramebufferSize(window, &wframe, &hframe);
   glViewport(0, 0, wframe, hframe);
+}
+
+void Env::changeMouseState(MouseState state) {
+  switch (state) {
+    case MouseState::Normal:
+      ignore_mouse = true;
+      glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+      glfwSetCursorPos(window, static_cast<double>(width / 2),
+                       static_cast<double>(height / 2));
+      break;
+    case MouseState::Hidden:
+      glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+      break;
+    case MouseState::Virtual:
+      glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+      break;
+    default:
+      break;
+  }
+  inputHandler.mstate = state;
 }
 
 void Env::setupWindowHint() {
@@ -98,10 +111,17 @@ void Env::setupWindowHint() {
 void Env::setupWindow() {
   if (window != nullptr) {
     glfwSetWindowUserPointer(window, &inputHandler);
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
     glfwSetCursorPosCallback(window, mouseCallback);
     glfwSetKeyCallback(window, keyCallback);
     glfwSetMouseButtonCallback(window, mouseKeyCallback);
+    glfwSetCursorEnterCallback(window, mouseEnterCallback);
+
+    glfwSetWindowFocusCallback(window, windowFocusCallback);
+    glfwSetWindowSizeCallback(window, windowResizeCallback);
+    glfwSetWindowPosCallback(window, windowPositionCallback);
+
+    changeMouseState(MouseState::Virtual);
   }
 }
 
@@ -122,16 +142,42 @@ void Env::update() {
   double currentTime = glfwGetTime();
   double deltaTime = currentTime - previousTime;
   previousTime = currentTime;
-  this->_deltaTime = static_cast<float>(deltaTime);
-  this->_absoluteTime = static_cast<float>(currentTime);
-  this->_frame++;
 
+  _deltaTime = static_cast<float>(deltaTime);
+  _absoluteTime = static_cast<float>(currentTime);
+  _frame++;
+
+  if (inputHandler.window_focused == false &&
+      inputHandler.mstate == MouseState::Virtual) {
+    changeMouseState(MouseState::Normal);
+  }
+  if (inputHandler.mouse_keys[GLFW_MOUSE_BUTTON_LEFT] &&
+      inputHandler.mstate == MouseState::Normal) {
+    if (inputHandler.mouse_in_window) {
+      changeMouseState(MouseState::Virtual);
+    }
+    inputHandler.mouse_keys[GLFW_MOUSE_BUTTON_LEFT] = false;
+  }
   if (inputHandler.keys[GLFW_KEY_ESCAPE]) {
-    glfwSetWindowShouldClose(window, 1);
+    inputHandler.keys[GLFW_KEY_ESCAPE] = false;
+    if (inputHandler.mstate == MouseState::Virtual) {
+      changeMouseState(MouseState::Normal);
+    } else {
+      glfwSetWindowShouldClose(window, 1);
+    }
   }
   if (inputHandler.keys[GLFW_KEY_F]) {
     inputHandler.keys[GLFW_KEY_F] = false;
     toggleFullscreen();
+  }
+  if (inputHandler.window_width != width ||
+      inputHandler.window_height != height) {
+    width = inputHandler.window_width;
+    height = inputHandler.window_height;
+    // Query and update framebuffer size
+    int wframe, hframe;
+    glfwGetFramebufferSize(window, &wframe, &hframe);
+    glViewport(0, 0, wframe, hframe);
   }
 }
 
@@ -155,7 +201,7 @@ float Env::getDeltaTime() const { return (this->_deltaTime); }
 
 float Env::getAbsoluteTime() const { return (this->_absoluteTime); }
 
-float Env::getFrame() const { return (this->_frame); }
+unsigned int Env::getFrame() const { return (this->_frame); }
 
 float Env::getFPS() const { return (this->_fps); }
 
@@ -188,6 +234,32 @@ void mouseKeyCallback(GLFWwindow *window, int button, int action, int mods) {
   } else if (action == GLFW_RELEASE) {
     inputHandler->mouse_keys[button] = false;
   }
+}
+
+void mouseEnterCallback(GLFWwindow *window, int has_entered) {
+  InputHandler *inputHandler =
+      reinterpret_cast<InputHandler *>(glfwGetWindowUserPointer(window));
+  inputHandler->mouse_in_window = has_entered == GLFW_TRUE ? true : false;
+}
+
+void windowFocusCallback(GLFWwindow *window, int focused) {
+  InputHandler *inputHandler =
+      reinterpret_cast<InputHandler *>(glfwGetWindowUserPointer(window));
+  inputHandler->window_focused = focused == GLFW_TRUE ? true : false;
+}
+
+void windowResizeCallback(GLFWwindow *window, int width, int height) {
+  InputHandler *inputHandler =
+      reinterpret_cast<InputHandler *>(glfwGetWindowUserPointer(window));
+  inputHandler->window_width = width;
+  inputHandler->window_height = height;
+}
+
+void windowPositionCallback(GLFWwindow *window, int x, int y) {
+  InputHandler *inputHandler =
+      reinterpret_cast<InputHandler *>(glfwGetWindowUserPointer(window));
+  inputHandler->window_pos_x = x;
+  inputHandler->window_pos_y = y;
 }
 
 static void APIENTRY openglCallbackFunction(GLenum source, GLenum type,

@@ -7,8 +7,6 @@ int main(int argc, char **argv) {
   if (env.window == nullptr) {
     return (EXIT_FAILURE);
   }
-  env.inputHandler.mouseDisabled = false;
-  env.inputHandler.keybrDisabled = false;
   render::Renderer renderer(env.width, env.height);
   Game game;
   while (!glfwWindowShouldClose(env.window)) {
