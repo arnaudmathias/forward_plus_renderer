@@ -122,9 +122,20 @@ void Game::print_debug_info(const Env& env, render::Renderer& renderer,
                             Camera& camera) {
   float fheight = static_cast<float>(renderer.getScreenHeight());
   float fwidth = static_cast<float>(renderer.getScreenWidth());
+  renderer.renderText(fwidth - 120.0f, fheight - 25.0f, 0.35f,
+                      float_to_string(env.getFPS(), 2) + " fps",
+                      glm::vec3(1.0f, 1.0f, 1.0f));
   renderer.renderText(10.0f, fheight - 25.0f, 0.35f,
+                      std::to_string(env.width) + " x " +
+                          std::to_string(env.height) + " (" +
+                          std::to_string(env.getFrame()) + ")",
+                      glm::vec3(1.0f, 1.0f, 1.0f));
+  renderer.renderText(10.0f, fheight - 50.0f, 0.35f,
                       "x: " + float_to_string(camera.pos.x, 2) +
                           " y: " + float_to_string(camera.pos.y, 2) +
                           " z: " + float_to_string(camera.pos.z, 2),
+                      glm::vec3(1.0f, 1.0f, 1.0f));
+  renderer.renderText(10.0f, fheight - 75.0f, 0.35f,
+                      std::to_string(NUM_LIGHTS) + " lights",
                       glm::vec3(1.0f, 1.0f, 1.0f));
 }

@@ -8,21 +8,19 @@
 
 class Camera {
  public:
-  glm::vec3 pos;
-  glm::vec3 dir;
-  glm::vec3 right;
-  glm::vec3 up;
-  glm::mat4 proj;
-  glm::mat4 view;
-  int width;
-  int height;
-  bool mouseInit = false;
-  float mouseXpos = 0;
-  float mouseYpos = 0;
-  float oldMouseXpos = 0;
-  float oldMouseYpos = 0;
-  float zNear;
-  float zFar;
+  glm::vec3 pos = {};
+  glm::vec3 dir = {};
+  glm::vec3 right = {};
+  glm::vec3 up = {};
+  glm::mat4 proj = {};
+  glm::mat4 view = {};
+  int width = 0;
+  int height = 0;
+  glm::vec2 old_mouse_pos = {};
+  glm::vec2 mouse_pos = {};
+  float zNear = 0.1f;
+  float zFar = 50.0f;
+  float fov = 80.0f;
 
   Camera(glm::vec3 pos, glm::vec3 target, int width = 1024, int height = 1024);
   void update(Env &env, float deltaTime);
@@ -33,14 +31,12 @@ class Camera {
   void updateMouse(Env &env, float deltaTime);
   void updateKeyboard(Env &env, float deltaTime);
 
-  void rotate(float hor, float ver);  // in radians
   float getAspectRatio();
 
  private:
   void updateMatrix(float deltaTime);
-  bool mouseMoved = false;
-  float horAngle;
-  float verAngle;
+  float pitch;
+  float yaw;
   float speed;
   float lastVelocity = 0.0f;
 };
