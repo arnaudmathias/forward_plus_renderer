@@ -5,14 +5,20 @@ Game::Game(void) {
       new Camera(glm::vec3(0.0f, 5.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 
   Model model = Model("data/sponza/sponza.obj");
-  std::vector<std::string> texture_names;
+  std::vector<std::string> albedo_textures;
+  std::vector<std::string> normal_textures;
+  std::vector<std::string> metallic_textures;
+  std::vector<std::string> roughness_textures;
   for (const auto& mesh : model.meshes) {
-    texture_names.push_back(mesh.diffuse_texname);
-    texture_names.push_back(mesh.bump_texname);
-    texture_names.push_back(mesh.roughness_texname);
-    texture_names.push_back(mesh.metallic_texname);
+    albedo_textures.push_back(mesh.diffuse_texname);
+    normal_textures.push_back(mesh.bump_texname);
+    metallic_textures.push_back(mesh.metallic_texname);
+    roughness_textures.push_back(mesh.roughness_texname);
   }
-  _texture_array = new TextureArray(texture_names);
+  _albedo_array = new TextureArray(albedo_textures);
+  _normal_array = new TextureArray(normal_textures);
+  _metallic_array = new TextureArray(metallic_textures);
+  _roughness_array = new TextureArray(roughness_textures);
 
   for (const auto& mesh : model.meshes) {
     std::vector<Vertex> vertices;
@@ -26,10 +32,11 @@ Game::Game(void) {
     attrib.model = glm::scale(glm::vec3(0.01f));
     attrib.material = mesh.material;
 
-    attrib.albedo = _texture_array->getTextureIndex(mesh.diffuse_texname);
-    attrib.normal = _texture_array->getTextureIndex(mesh.bump_texname);
-    attrib.roughness = _texture_array->getTextureIndex(mesh.roughness_texname);
-    attrib.metallic = _texture_array->getTextureIndex(mesh.metallic_texname);
+    attrib.albedo = _albedo_array->getTextureIndex(mesh.diffuse_texname);
+    attrib.normal = _normal_array->getTextureIndex(mesh.bump_texname);
+    attrib.metallic = _metallic_array->getTextureIndex(mesh.metallic_texname);
+    attrib.roughness =
+        _roughness_array->getTextureIndex(mesh.roughness_texname);
 
     attrib.alpha_mask = mesh.alpha_mask;
 
@@ -47,8 +54,17 @@ Game::~Game(void) {
       delete attrib.vao;
     }
   }
-  if (_texture_array != nullptr) {
-    delete _texture_array;
+  if (_albedo_array != nullptr) {
+    delete _albedo_array;
+  }
+  if (_normal_array != nullptr) {
+    delete _normal_array;
+  }
+  if (_metallic_array != nullptr) {
+    delete _metallic_array;
+  }
+  if (_roughness_array != nullptr) {
+    delete _roughness_array;
   }
 }
 
@@ -71,7 +87,10 @@ void Game::update(Env& env) {
 void Game::render(const Env& env, render::Renderer& renderer) {
   float fwidth = static_cast<float>(renderer.getScreenWidth());
   float fheight = static_cast<float>(renderer.getScreenHeight());
-  renderer.uniforms.texture_array = _texture_array;
+  renderer.uniforms.albedo_array = _albedo_array;
+  renderer.uniforms.normal_array = _normal_array;
+  renderer.uniforms.metallic_array = _metallic_array;
+  renderer.uniforms.roughness_array = _roughness_array;
   renderer.uniforms.view = _camera->view;
   renderer.uniforms.proj = _camera->proj;
   renderer.uniforms.view_proj = _camera->proj * _camera->view;

@@ -80,7 +80,10 @@ struct LightSSBO {
 };
 
 struct Uniforms {
-  TextureArray* texture_array;
+  TextureArray* albedo_array;
+  TextureArray* normal_array;
+  TextureArray* metallic_array;
+  TextureArray* roughness_array;
   glm::mat4 view;
   glm::mat4 proj;
   glm::mat4 ortho;
