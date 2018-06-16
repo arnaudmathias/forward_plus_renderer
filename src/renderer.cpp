@@ -8,15 +8,6 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
   switchDepthTestFunc(DepthTestFunc::Less);
   switchBlendingFunc(BlendFunc::OneMinusSrcAlpha);
 
-  for (int i = 0; i < NUM_LIGHTS; i++) {
-    lights_data.lights[i].position = glm::vec3(-10.0 + i * 10.0, 1.0f, 0.0f);
-    lights_data.lights[i].radius = glm::linearRand(3.5f, 10.0f);
-    lights_data.lights[i].color =
-        glm::vec3(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f),
-                  glm::linearRand(0.0f, 1.0f));
-    lights_data.lights[i].intensity = 1.0f;
-  }
-
   // Gen and setup our depth depth map FBO for the depth prepass
   glGenFramebuffers(1, &depthpass_fbo);
   glBindFramebuffer(GL_FRAMEBUFFER, depthpass_fbo);
@@ -84,7 +75,7 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
   // Lights SSBO
   glGenBuffers(1, &ssbo_lights);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_lights);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(LightSSBO), &lights_data,
+  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Lights), &uniforms.lights,
                GL_DYNAMIC_DRAW);
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_lights);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
@@ -122,7 +113,6 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
        {-1.0f, 0.0f, 0.0f},
        {0.0f, 0.0f, -1.0f}},
       {0, 2, 3, 4, 2, 0, 0, 5, 4, 3, 5, 0, 1, 2, 4, 3, 2, 1, 1, 5, 3, 4, 5, 1});
-
 }
 
 Renderer::Renderer(Renderer const &src) { *this = src; }
@@ -268,16 +258,9 @@ void Renderer::draw() {
     switchDepthTestFunc(DepthTestFunc::Equal);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    for (int i = 0; i < NUM_LIGHTS; i++) {
-      lights_data.lights[i].position =
-          glm::vec3((-10.0 + i * 2.5) + sin(uniforms.time * (i + 1) * 0.5f),
-                    1.0f, cos(uniforms.time * (i + 1) * 0.5f));
-      lights_data.lights[i].intensity = 1.0f;
-    }
-
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_lights);
     GLvoid *lights_ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
-    memcpy(lights_ptr, &lights_data, sizeof(LightSSBO));
+    memcpy(lights_ptr, &uniforms.lights, sizeof(Lights));
     glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 
     switchShader(lightculling->id, current_shader_id);
@@ -301,6 +284,9 @@ void Renderer::draw() {
     switchShader(shading->id, current_shader_id);
     setUniform(glGetUniformLocation(shading->id, "workgroup_x"),
                static_cast<int>(workgroup_x));
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_lights);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_visible_lights);
 
     glActiveTexture(GL_TEXTURE0 + 0);
     glBindTexture(GL_TEXTURE_2D_ARRAY, uniforms.albedo_array->id);
@@ -367,7 +353,7 @@ void Renderer::draw() {
     if (uniforms.debug) {
       switchDepthTestFunc(DepthTestFunc::Less);
       switchShader(octahedron->id, current_shader_id);
-      for (const auto &light : lights_data.lights) {
+      for (const auto &light : uniforms.lights.lights) {
         setUniform(glGetUniformLocation(octahedron->id, "color"), light.color);
         glm::mat4 model =
             glm::translate(light.position) * glm::scale(glm::vec3(0.15f));
