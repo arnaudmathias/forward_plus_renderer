@@ -2,9 +2,16 @@
 
 Game::Game(void) {
   _camera =
-      new Camera(glm::vec3(0.0f, 5.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+      new Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
   Model model = Model("data/sponza/sponza.obj");
+  glm::mat4 scene_scale = glm::scale(glm::vec3(0.01f));
+  glm::mat4 scene_transform = glm::translate(-model.aabb_center);
+  scene_aabb_center = glm::vec3(scene_scale * scene_transform *
+                                glm::vec4(model.aabb_center, 1.0f));
+  scene_aabb_halfsize = glm::vec3(scene_scale * scene_transform *
+                                  glm::vec4(model.aabb_halfsize, 0.0f));
+
   std::vector<std::string> albedo_textures;
   std::vector<std::string> normal_textures;
   std::vector<std::string> metallic_textures;
@@ -29,7 +36,7 @@ Game::Game(void) {
     }
     render::Attrib attrib;
     attrib.shader_key = "default";
-    attrib.model = glm::scale(glm::vec3(0.01f));
+    attrib.model = scene_scale * scene_transform;
     attrib.material = mesh.material;
 
     attrib.albedo = _albedo_array->getTextureIndex(mesh.diffuse_texname);
@@ -43,13 +50,21 @@ Game::Game(void) {
     attrib.vao = new VAO(vertices);
     attribs.push_back(attrib);
   }
+  glm::vec3 min_bound = scene_aabb_center - scene_aabb_halfsize;
+  glm::vec3 max_bound = scene_aabb_center + scene_aabb_halfsize;
+  min_bound = glm::vec3(min_bound.x + 3.0f, min_bound.y, min_bound.z + 3.0f);
+  max_bound = glm::vec3(max_bound.x - 3.0f, max_bound.y, max_bound.z - 3.0f);
   for (int i = 0; i < NUM_LIGHTS; i++) {
-    lights.lights[i].position = glm::vec3(-10.0 + i * 10.0, 1.0f, 0.0f);
+    // lights.lights[i].position = glm::vec3(-10.0 + i * 10.0, 1.0f, 0.0f);
+    lights.lights[i].position =
+        glm::vec3(glm::linearRand(min_bound.x, max_bound.x), min_bound.y,
+                  glm::linearRand(min_bound.z, max_bound.z));
     lights.lights[i].radius = glm::linearRand(3.5f, 10.0f);
     lights.lights[i].color =
         glm::vec3(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f),
                   glm::linearRand(0.0f, 1.0f));
     lights.lights[i].intensity = 1.0f;
+    lights_speed[i] = glm::linearRand(0.5f, 5.0f);
   }
 }
 
@@ -77,7 +92,8 @@ Game::~Game(void) {
 }
 Game& Game::operator=(Game const& rhs) {
   if (this != &rhs) {
-    this->_debugMode = rhs._debugMode;
+    this->_debug_mode = rhs._debug_mode;
+    this->_static_light_mode = rhs._static_light_mode;
     this->_camera = new Camera(*rhs._camera);
   }
   return (*this);
@@ -85,15 +101,31 @@ Game& Game::operator=(Game const& rhs) {
 
 void Game::update(Env& env) {
   _camera->update(env, env.getDeltaTime());
+  glm::vec3 min_bound = scene_aabb_center - scene_aabb_halfsize;
+  glm::vec3 max_bound = scene_aabb_center + scene_aabb_halfsize;
+  min_bound = glm::vec3(min_bound.x + 3.0f, min_bound.y, min_bound.z + 3.0f);
+  max_bound = glm::vec3(max_bound.x - 3.0f, max_bound.y, max_bound.z - 3.0f);
   for (int i = 0; i < NUM_LIGHTS; i++) {
-    lights.lights[i].position = glm::vec3(
-        (-10.0 + i * 2.5) + sin(env.getAbsoluteTime() * (i + 1) * 0.5f), 1.0f,
-        cos(env.getAbsoluteTime() * (i + 1) * 0.5f));
-    lights.lights[i].intensity = 1.0f;
+    if (lights.lights[i].position.y > max_bound.y + 3.0f) {
+      lights.lights[i].position =
+          glm::vec3(glm::linearRand(min_bound.x, max_bound.x), min_bound.y,
+                    glm::linearRand(min_bound.z, max_bound.z));
+      lights.lights[i].radius = glm::linearRand(3.5f, 10.0f);
+      lights.lights[i].color =
+          glm::vec3(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f),
+                    glm::linearRand(0.0f, 1.0f));
+      lights_speed[i] = glm::linearRand(0.5f, 5.0f);
+    } else if (_static_light_mode == false) {
+      lights.lights[i].position.y += lights_speed[i] * env.getDeltaTime();
+    }
+  }
+  if (env.inputHandler.keys[GLFW_KEY_SPACE]) {
+    env.inputHandler.keys[GLFW_KEY_SPACE] = false;
+    _static_light_mode = !_static_light_mode;
   }
   if (env.inputHandler.keys[GLFW_KEY_I]) {
     env.inputHandler.keys[GLFW_KEY_I] = false;
-    _debugMode = !_debugMode;
+    _debug_mode = !_debug_mode;
   }
 }
 
@@ -113,7 +145,7 @@ void Game::render(const Env& env, render::Renderer& renderer) {
   renderer.uniforms.time = env.getAbsoluteTime();
   renderer.uniforms.screen_size =
       glm::ivec2(renderer.getScreenWidth(), renderer.getScreenHeight());
-  renderer.uniforms.debug = _debugMode ? 1 : 0;
+  renderer.uniforms.debug = _debug_mode ? 1 : 0;
 
   for (const auto& attrib : attribs) {
     renderer.addAttrib(attrib);
@@ -122,7 +154,7 @@ void Game::render(const Env& env, render::Renderer& renderer) {
   renderer.draw();
 
   renderer.flushAttribs();
-  if (_debugMode) {
+  if (_debug_mode) {
     print_debug_info(env, renderer, *_camera);
   }
 }
