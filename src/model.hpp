@@ -1,6 +1,7 @@
 #pragma once
 #include <algorithm>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <vector>
 #include "forward.hpp"
@@ -33,6 +34,8 @@ class Mesh {
   Material material;
 
   bool alpha_mask = false;
+  glm::vec3 aabb_center;
+  glm::vec3 aabb_halfsize;
 
  private:
   Mesh();
@@ -42,11 +45,19 @@ class Model {
  public:
   Model(const std::string filename);
   ~Model();
+  Model(Model const& src);
+  Model& operator=(Model const& rhs);
 
   std::vector<Vertex> vertices;
   std::vector<uint32_t> indices;
   std::vector<Mesh> meshes;
+
+  glm::vec3 aabb_center;
+  glm::vec3 aabb_halfsize;
 };
+
+void computeAABB(Vertex* vertices, size_t vertices_count,
+                 glm::vec3& aabb_center, glm::vec3& aabb_halfsize);
 
 std::string sanitizeFilename(std::string filename);
 std::string getBaseDir(const std::string& filepath);

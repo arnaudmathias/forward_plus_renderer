@@ -29,9 +29,11 @@ Mesh& Mesh::operator=(Mesh const& rhs) {
     emissive_texname = rhs.emissive_texname;
     normal_texname = rhs.normal_texname;
 
-    alpha_mask = rhs.alpha_mask;
-
     material = rhs.material;
+
+    alpha_mask = rhs.alpha_mask;
+    aabb_center = rhs.aabb_center;
+    aabb_halfsize = rhs.aabb_halfsize;
   }
   return (*this);
 }
@@ -190,10 +192,44 @@ Model::Model(const std::string filename) {
       }
     }
     meshes[material_id].indexCount = vertexCount;
+    computeAABB(&vertices[meshes[material_id].vertexOffset], vertexCount,
+                meshes[material_id].aabb_center,
+                meshes[material_id].aabb_halfsize);
   }
+  computeAABB(vertices.data(), vertices.size(), aabb_center, aabb_halfsize);
 }
 
 Model::~Model() {}
+
+Model::Model(Model const& src) { *this = src; }
+
+Model& Model::operator=(Model const& rhs) {
+  if (this != &rhs) {
+    vertices = rhs.vertices;
+    indices = rhs.indices;
+    meshes = rhs.meshes;
+    aabb_center = rhs.aabb_center;
+    aabb_halfsize = rhs.aabb_halfsize;
+  }
+  return (*this);
+}
+
+void computeAABB(Vertex* vertices, size_t vertices_count,
+                 glm::vec3& aabb_center, glm::vec3& aabb_halfsize) {
+  glm::vec3 aabb_min = glm::vec3(0.0f);
+  glm::vec3 aabb_max = glm::vec3(0.0f);
+  for (size_t i = 0; i < vertices_count; i++) {
+    glm::vec3 vertex_position = vertices[i].position;
+    if (vertex_position.x < aabb_min.x) aabb_min.x = vertex_position.x;
+    if (vertex_position.x > aabb_max.x) aabb_max.x = vertex_position.x;
+    if (vertex_position.y < aabb_min.y) aabb_min.y = vertex_position.y;
+    if (vertex_position.y > aabb_max.y) aabb_max.y = vertex_position.y;
+    if (vertex_position.z < aabb_min.z) aabb_min.z = vertex_position.z;
+    if (vertex_position.z > aabb_max.z) aabb_max.z = vertex_position.z;
+  }
+  aabb_center = ((aabb_min + aabb_max) * 0.5f);
+  aabb_halfsize = (aabb_max - aabb_min) * 0.5f;
+}
 
 std::string sanitizeFilename(std::string filename) {
   std::replace(filename.begin(), filename.end(), '\\', '/');
