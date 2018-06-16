@@ -42,6 +42,10 @@ struct Light {
   float intensity = 1.0f;
 };
 
+struct Lights {
+  struct Light lights[NUM_LIGHTS] = {};
+};
+
 struct Vertex {
   glm::vec3 position = {0, 0, 0};
   glm::vec3 normal = {0, 0, 0};

@@ -76,11 +76,8 @@ struct UBO {
   struct Material material = {};
 };
 
-struct LightSSBO {
-  struct Light lights[NUM_LIGHTS] = {};
-};
-
 struct Uniforms {
+  Lights lights;
   TextureArray* albedo_array;
   TextureArray* normal_array;
   TextureArray* metallic_array;
@@ -153,7 +150,6 @@ class Renderer {
   GLuint lightpass_texture_normal_id = 0;
   GLuint lightpass_texture_depth_id = 0;
 
-  LightSSBO lights_data = {};
   GLuint ubo_lights = 0;
 
  private:

@@ -8,15 +8,6 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
   switchDepthTestFunc(DepthTestFunc::Less);
   switchBlendingFunc(BlendFunc::OneMinusSrcAlpha);
 
-  for (int i = 0; i < NUM_LIGHTS; i++) {
-    lights_data.lights[i].position = glm::vec3(-10.0 + i * 10.0, 1.0f, 0.0f);
-    lights_data.lights[i].radius = glm::linearRand(3.5f, 10.0f);
-    lights_data.lights[i].color =
-        glm::vec3(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f),
-                  glm::linearRand(0.0f, 1.0f));
-    lights_data.lights[i].intensity = 1.0f;
-  }
-
   // Gen and setup our depth depth map FBO for the depth prepass
   glGenFramebuffers(1, &depthpass_fbo);
   glBindFramebuffer(GL_FRAMEBUFFER, depthpass_fbo);
@@ -83,7 +74,7 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
 
   glGenBuffers(1, &ubo_lights);
   glBindBuffer(GL_UNIFORM_BUFFER, ubo_lights);
-  glBufferData(GL_UNIFORM_BUFFER, sizeof(LightSSBO), &lights_data,
+  glBufferData(GL_UNIFORM_BUFFER, sizeof(Lights), &uniforms.lights,
                GL_DYNAMIC_DRAW);
   glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo_lights);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
@@ -255,16 +246,9 @@ void Renderer::draw() {
 
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo_lights);
 
-    for (int i = 0; i < NUM_LIGHTS; i++) {
-      lights_data.lights[i].position =
-          glm::vec3((-10.0 + i * 2.5) + sin(uniforms.time * (i + 1) * 0.5f),
-                    1.0f, cos(uniforms.time * (i + 1) * 0.5f));
-      lights_data.lights[i].intensity = 1.0f;
-    }
-
     glBindBuffer(GL_UNIFORM_BUFFER, ubo_lights);
     GLvoid *ubo_light_ptr = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-    memcpy(ubo_light_ptr, &lights_data, sizeof(LightSSBO));
+    memcpy(ubo_light_ptr, &uniforms.lights, sizeof(Lights));
     glUnmapBuffer(GL_UNIFORM_BUFFER);
 
     glActiveTexture(GL_TEXTURE0 + 0);
@@ -326,7 +310,7 @@ void Renderer::draw() {
     if (uniforms.debug) {
       switchDepthTestFunc(DepthTestFunc::Less);
       switchShader(octahedron->id, current_shader_id);
-      for (const auto &light : lights_data.lights) {
+      for (const auto &light : uniforms.lights.lights) {
         setUniform(glGetUniformLocation(octahedron->id, "color"), light.color);
         glm::mat4 model =
             glm::translate(light.position) * glm::scale(glm::vec3(0.15f));

@@ -43,6 +43,14 @@ Game::Game(void) {
     attrib.vao = new VAO(vertices);
     attribs.push_back(attrib);
   }
+  for (int i = 0; i < NUM_LIGHTS; i++) {
+    lights.lights[i].position = glm::vec3(-10.0 + i * 10.0, 1.0f, 0.0f);
+    lights.lights[i].radius = glm::linearRand(3.5f, 10.0f);
+    lights.lights[i].color =
+        glm::vec3(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f),
+                  glm::linearRand(0.0f, 1.0f));
+    lights.lights[i].intensity = 1.0f;
+  }
 }
 
 Game::Game(Game const& src) { *this = src; }
@@ -77,6 +85,12 @@ Game& Game::operator=(Game const& rhs) {
 
 void Game::update(Env& env) {
   _camera->update(env, env.getDeltaTime());
+  for (int i = 0; i < NUM_LIGHTS; i++) {
+    lights.lights[i].position = glm::vec3(
+        (-10.0 + i * 2.5) + sin(env.getAbsoluteTime() * (i + 1) * 0.5f), 1.0f,
+        cos(env.getAbsoluteTime() * (i + 1) * 0.5f));
+    lights.lights[i].intensity = 1.0f;
+  }
   if (env.inputHandler.keys[GLFW_KEY_I]) {
     env.inputHandler.keys[GLFW_KEY_I] = false;
     _debugMode = !_debugMode;
@@ -86,6 +100,7 @@ void Game::update(Env& env) {
 void Game::render(const Env& env, render::Renderer& renderer) {
   float fwidth = static_cast<float>(renderer.getScreenWidth());
   float fheight = static_cast<float>(renderer.getScreenHeight());
+  renderer.uniforms.lights = lights;
   renderer.uniforms.albedo_array = _albedo_array;
   renderer.uniforms.normal_array = _normal_array;
   renderer.uniforms.metallic_array = _metallic_array;
