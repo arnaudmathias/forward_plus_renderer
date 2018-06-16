@@ -19,6 +19,7 @@ layout(std430, binding = 1) writeonly buffer visible_lights_indices {
 
 uniform mat4 V;
 uniform mat4 P;
+uniform mat4 invP;
 uniform mat4 VP;
 uniform int num_lights;
 uniform vec2 screen_size;
@@ -29,12 +30,11 @@ shared uint min_depth;
 shared uint max_depth;
 shared vec4 frustum_planes[6];
 shared uint group_light_count;
-shared int group_light_index[1024];
+shared int group_light_index[MAX_LIGHTS_PER_TILE];
 
 layout(local_size_x = TILE_SIZE, local_size_y = TILE_SIZE) in;
 void main() {
 	ivec2 tile_id = ivec2(gl_WorkGroupID.xy);
-	//uint tile_index = tile_id.y * push_constants.tile_nums.x + tile_id.x;
 
 	if (gl_LocalInvocationIndex == 0) {
 		min_depth = 0xFFFFFFFF;
@@ -43,7 +43,7 @@ void main() {
 		uint index = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
 		uint offset = index * MAX_LIGHTS_PER_TILE;
 		for (uint i = 0; i < MAX_LIGHTS_PER_TILE; i++) {
-			lights_indices[offset + i] = 0;
+			lights_indices[offset + i] = -1;
 		}
 	}
 	barrier();
@@ -64,19 +64,25 @@ void main() {
 		float min_group_depth = uintBitsToFloat(min_depth);
 		float max_group_depth = uintBitsToFloat(max_depth);
 
-		vec2 tile_scale = vec2(screen_size * (1.0f / float(2 * TILE_SIZE)));
+		min_group_depth = (invP * vec4(0.0, 0.0, (2.0 * min_group_depth - 1.0), 1.0)).z;
+		max_group_depth = (invP * vec4(0.0, 0.0, (2.0 * max_group_depth - 1.0), 1.0)).z;
+
+		vec2 tile_scale = vec2(screen_size) * (1.0 / float(2 * TILE_SIZE));
 		vec2 tile_bias = tile_scale - vec2(gl_WorkGroupID.xy);
 
 		vec4 col1 = vec4(-P[0][0] * tile_scale.x, P[0][1], tile_bias.x, P[0][3]);
 		vec4 col2 = vec4(P[1][0], -P[1][1] * tile_scale.y, tile_bias.y, P[1][3]);
 		vec4 col4 = vec4(P[3][0], P[3][1], -1.0, P[3][3]);
 
-		frustum_planes[0] = normalize(col4 + col1);
-		frustum_planes[1] = normalize(col4 - col1);
-		frustum_planes[2] = normalize(col4 - col2);
-		frustum_planes[3] = normalize(col4 + col2);
-		frustum_planes[4] = normalize(vec4(0.0, 0.0, -1.0, -min_group_depth));
-		frustum_planes[5] = normalize(vec4(0.0, 0.0, -1.0, max_group_depth));
+		frustum_planes[0] = col4 + col1;
+		frustum_planes[1] = col4 - col1;
+		frustum_planes[2] = col4 - col2;
+		frustum_planes[3] = col4 + col2;
+		frustum_planes[4] = vec4(0.0, 0.0, 1.0, -min_group_depth);
+		frustum_planes[5] = vec4(0.0, 0.0, -1.0, max_group_depth);
+		for (uint i = 0; i < 4; i++) {
+			frustum_planes[i] *= 1.0f / length(frustum_planes[i].xyz);
+		}
 	}
 
 	barrier();
@@ -85,21 +91,19 @@ void main() {
 	uint thread_count = TILE_SIZE * TILE_SIZE;
 	uint passCount = (num_lights + thread_count - 1) / thread_count;
 
-	for (int i = 0; i < passCount; ++i){
+	for (int i = 0; i < passCount; ++i) {
 		uint lightIndex = i * thread_count + gl_LocalInvocationIndex;
 		lightIndex = min(lightIndex, num_lights);
 
 		Light light = lights[lightIndex];
-		vec4 pos = V * vec4(light.position, 1.0);
-		float rad = light.radius / pos.w;
+		vec4 vs_light_pos = V * vec4(light.position, 1.0);
 
 		if (group_light_count < MAX_LIGHTS_PER_TILE) {
 			bool inFrustum = true;
-			for (int i = 3; i >= 0 && inFrustum; i--){
-				float dist = dot(frustum_planes[i], pos);
-				inFrustum = (-rad <= dist);
+			for (int i = 0; i < 6 && inFrustum; i++) {
+				float d = dot(frustum_planes[i], vs_light_pos);
+				inFrustum = (d >= -light.radius);
 			}
-
 			if (inFrustum) {
 				uint id = atomicAdd(group_light_count, 1);
 				group_light_index[id] = int(lightIndex);

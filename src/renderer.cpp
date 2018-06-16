@@ -192,6 +192,7 @@ void Renderer::switchShader(GLuint shader_id, int &current_shader_id) {
   if (shader_id > 0 && shader_id != current_shader_id) {
     glUseProgram(shader_id);
     setUniform(glGetUniformLocation(shader_id, "P"), uniforms.proj);
+    setUniform(glGetUniformLocation(shader_id, "invP"), uniforms.inv_proj);
     setUniform(glGetUniformLocation(shader_id, "V"), uniforms.view);
     setUniform(glGetUniformLocation(shader_id, "VP"), uniforms.view_proj);
     setUniform(glGetUniformLocation(shader_id, "view_pos"), uniforms.view_pos);

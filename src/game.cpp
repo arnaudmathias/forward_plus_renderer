@@ -140,6 +140,7 @@ void Game::render(const Env& env, render::Renderer& renderer) {
   renderer.uniforms.roughness_array = _roughness_array;
   renderer.uniforms.view = _camera->view;
   renderer.uniforms.proj = _camera->proj;
+  renderer.uniforms.inv_proj = glm::inverse(_camera->proj);
   renderer.uniforms.view_proj = _camera->proj * _camera->view;
   renderer.uniforms.view_pos = _camera->pos;
   renderer.uniforms.time = env.getAbsoluteTime();

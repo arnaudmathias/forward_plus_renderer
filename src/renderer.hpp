@@ -83,6 +83,7 @@ struct Uniforms {
   TextureArray* roughness_array;
   glm::mat4 view;
   glm::mat4 proj;
+  glm::mat4 inv_proj;
   glm::mat4 ortho;
   glm::mat4 view_proj;
   glm::ivec2 screen_size;
