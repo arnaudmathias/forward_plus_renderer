@@ -1,6 +1,7 @@
 #pragma once
 #define TILE_SIZE 16
-#define NUM_LIGHTS 16
+#define NUM_LIGHTS 256
+#define MAX_LIGHTS_PER_TILE 256
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>

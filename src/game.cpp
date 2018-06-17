@@ -55,11 +55,11 @@ Game::Game(void) {
   min_bound = glm::vec3(min_bound.x + 3.0f, min_bound.y, min_bound.z + 3.0f);
   max_bound = glm::vec3(max_bound.x - 3.0f, max_bound.y, max_bound.z - 3.0f);
   for (int i = 0; i < NUM_LIGHTS; i++) {
-    // lights.lights[i].position = glm::vec3(-10.0 + i * 10.0, 1.0f, 0.0f);
+    // lights.lights[i].position = glm::vec3(-10.0 + i * 10.0, -6.0f, 0.0f);
     lights.lights[i].position =
         glm::vec3(glm::linearRand(min_bound.x, max_bound.x), min_bound.y,
                   glm::linearRand(min_bound.z, max_bound.z));
-    lights.lights[i].radius = glm::linearRand(3.5f, 10.0f);
+    lights.lights[i].radius = 2.0f;
     lights.lights[i].color =
         glm::vec3(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f),
                   glm::linearRand(0.0f, 1.0f));
@@ -111,7 +111,7 @@ void Game::update(Env& env) {
       lights.lights[i].position =
           glm::vec3(glm::linearRand(min_bound.x, max_bound.x), min_bound.y,
                     glm::linearRand(min_bound.z, max_bound.z));
-      lights.lights[i].radius = glm::linearRand(3.5f, 10.0f);
+      lights.lights[i].radius = 2.0f;
       lights.lights[i].color =
           glm::vec3(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f),
                     glm::linearRand(0.0f, 1.0f));

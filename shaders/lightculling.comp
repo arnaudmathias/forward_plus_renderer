@@ -1,6 +1,6 @@
 #version 450 core
 #define TILE_SIZE 16
-#define MAX_LIGHTS_PER_TILE 32
+#define MAX_LIGHTS_PER_TILE 256
 
 struct Light {
 	vec3 position;
@@ -64,8 +64,12 @@ void main() {
 		float min_group_depth = uintBitsToFloat(min_depth);
 		float max_group_depth = uintBitsToFloat(max_depth);
 
-		min_group_depth = (invP * vec4(0.0, 0.0, (2.0 * min_group_depth - 1.0), 1.0)).z;
-		max_group_depth = (invP * vec4(0.0, 0.0, (2.0 * max_group_depth - 1.0), 1.0)).z;
+		vec4 vs_min_depth = (invP * vec4(0.0, 0.0, (2.0 * min_group_depth - 1.0), 1.0));
+		vec4 vs_max_depth = (invP * vec4(0.0, 0.0, (2.0 * max_group_depth - 1.0), 1.0));
+		vs_min_depth /= vs_min_depth.w;
+		vs_max_depth /= vs_max_depth.w;
+		min_group_depth = vs_min_depth.z;
+		max_group_depth = vs_max_depth.z;
 
 		vec2 tile_scale = vec2(screen_size) * (1.0 / float(2 * TILE_SIZE));
 		vec2 tile_bias = tile_scale - vec2(gl_WorkGroupID.xy);
@@ -89,27 +93,23 @@ void main() {
 
 	// Cull lights
 	uint thread_count = TILE_SIZE * TILE_SIZE;
-	uint passCount = (num_lights + thread_count - 1) / thread_count;
-
-	for (int i = 0; i < passCount; ++i) {
-		uint lightIndex = i * thread_count + gl_LocalInvocationIndex;
-		lightIndex = min(lightIndex, num_lights);
-
-		Light light = lights[lightIndex];
+	for (uint i = gl_LocalInvocationIndex; i < num_lights; i += thread_count) {
+		Light light = lights[i];
 		vec4 vs_light_pos = V * vec4(light.position, 1.0);
 
 		if (group_light_count < MAX_LIGHTS_PER_TILE) {
 			bool inFrustum = true;
-			for (int i = 0; i < 6 && inFrustum; i++) {
-				float d = dot(frustum_planes[i], vs_light_pos);
+			for (uint j = 0; j < 6 && inFrustum; j++) {
+				float d = dot(frustum_planes[j], vs_light_pos);
 				inFrustum = (d >= -light.radius);
 			}
 			if (inFrustum) {
 				uint id = atomicAdd(group_light_count, 1);
-				group_light_index[id] = int(lightIndex);
+				group_light_index[id] = int(i);
 			}
 		}
 	}
+
 	barrier();
 	if (gl_LocalInvocationIndex == 0) {
 		uint index = gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;

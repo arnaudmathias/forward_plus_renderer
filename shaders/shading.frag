@@ -1,7 +1,7 @@
 #version 450 core
+#define MAX_LIGHTS_PER_TILE 256
 layout (location = 0) out vec4 out_hdr;
 layout (location = 1) out vec3 out_normal;
-
 const float PI = 3.14159265359;
 
 in VS_OUT {
@@ -133,7 +133,7 @@ void main() {
     ivec2 loc = ivec2(gl_FragCoord.xy);
     ivec2 tileID = loc / ivec2(16, 16);
     uint index = tileID.y * workgroup_x + tileID.x;
-    uint offset = index * 32;
+    uint offset = index * MAX_LIGHTS_PER_TILE;
 
     vec3 ts_view_dir = normalize(vs_in.ts_view_pos - vs_in.ts_frag_pos);
 
@@ -151,8 +151,8 @@ void main() {
     f0 = mix(f0, albedo, metallic);
 
     vec3 lo = vec3(0.0);
-    for (uint i = 0; i < 32; i++) {
-	if (lights_indices[offset + i] != 0) {
+    for (uint i = 0; i < MAX_LIGHTS_PER_TILE; i++) {
+	if (lights_indices[offset + i] != -1) {
 	    int indices = lights_indices[offset + i];
 	    vec3 ts_light_pos = vs_in.TBN * lights[indices].position;
 	    vec3 ts_light_dir = normalize(ts_light_pos - vs_in.ts_frag_pos);
@@ -160,7 +160,7 @@ void main() {
 
 	    float dist = length(ts_light_pos - vs_in.ts_frag_pos);
 	    float attenuation = get_attenuation(lights[indices].radius, dist);
-	    vec3 radiance = lights[i].color.rgb * attenuation * lights[i].intensity;
+	    vec3 radiance = lights[indices].color.rgb * attenuation;
 	    float ndf = distribution_ggx(normal, ts_halfway, roughness);       
 	    float g = geometry_smith(normal, ts_view_dir, ts_light_dir, roughness); 
 	    vec3 f = fresnel_schlick(max(dot(ts_halfway, ts_view_dir), 0.0f), f0);
@@ -181,12 +181,12 @@ void main() {
     vec3 color = ambient + lo;
     if (debug == 1) {
 	uint count;
-	for (uint i = 0; i < 32; i++) {
-	    if (lights_indices[offset + i] != 0) {
+	for (uint i = 0; i < MAX_LIGHTS_PER_TILE; i++) {
+	    if (lights_indices[offset + i] != -1) {
 		count++;
 	    }
 	}
-	float shade = float(count) / 32.0;
+	float shade = float(count) / float(MAX_LIGHTS_PER_TILE); 
 	color = vec3(shade);
     }
     out_hdr = vec4(color, alpha);

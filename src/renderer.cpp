@@ -87,8 +87,8 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
   glGenBuffers(1, &ssbo_visible_lights);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_visible_lights);
   glBufferData(GL_SHADER_STORAGE_BUFFER,
-               sizeof(int) * workgroup_x * workgroup_y * 32, NULL,
-               GL_DYNAMIC_DRAW);
+               sizeof(int) * workgroup_x * workgroup_y * MAX_LIGHTS_PER_TILE,
+               NULL, GL_DYNAMIC_DRAW);
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_visible_lights);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
@@ -416,8 +416,8 @@ void Renderer::updateRessources() {
   GLuint workgroup_y = (_height + (_height % TILE_SIZE)) / TILE_SIZE;
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_visible_lights);
   glBufferData(GL_SHADER_STORAGE_BUFFER,
-               sizeof(int) * workgroup_x * workgroup_y * 32, NULL,
-               GL_DYNAMIC_DRAW);
+               sizeof(int) * workgroup_x * workgroup_y * MAX_LIGHTS_PER_TILE,
+               NULL, GL_DYNAMIC_DRAW);
 
   glBindTexture(GL_TEXTURE_2D, depthpass_texture_depth_id);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _width, _height, 0,
