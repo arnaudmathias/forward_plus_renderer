@@ -128,6 +128,14 @@ void Game::update(Env& env) {
     env.inputHandler.keys[GLFW_KEY_I] = false;
     _debug_mode = !_debug_mode;
   }
+  if (env.inputHandler.keys[GLFW_KEY_Q]) {
+    env.inputHandler.keys[GLFW_KEY_Q] = false;
+    _light_debug_mode = !_light_debug_mode;
+  }
+  if (env.inputHandler.keys[GLFW_KEY_E]) {
+    env.inputHandler.keys[GLFW_KEY_E] = false;
+    _visibilty_debug_mode = !_visibilty_debug_mode;
+  }
 }
 
 void Game::render(const Env& env, render::Renderer& renderer) {
@@ -147,6 +155,8 @@ void Game::render(const Env& env, render::Renderer& renderer) {
   renderer.uniforms.screen_size =
       glm::ivec2(renderer.getScreenWidth(), renderer.getScreenHeight());
   renderer.uniforms.debug = _debug_mode ? 1 : 0;
+  renderer.uniforms.light_debug = _light_debug_mode ? 1 : 0;
+  renderer.uniforms.visibilty_debug = _visibilty_debug_mode ? 1 : 0;
 
   for (const auto& attrib : attribs) {
     renderer.addAttrib(attrib);

@@ -60,19 +60,19 @@ void Env::toggleFullscreen() {
     width = mode->width;
     height = mode->height;
 
-#if defined(__APPLE__)
-    // The mouse virtual position reported by curposPosCallback promptly jump
-    // after a window -> fullscreen transition
-    // Doesn't happen on fullscreen -> window
-    // GLFW bug ?
     ignore_mouse = true;
-#endif
   } else {
+#if defined(_WIN32)
+    inputHandler.window_pos_x = (mode->width / 2) - (_windowed_width / 2);
+    inputHandler.window_pos_y = (mode->height / 2) - (_windowed_height / 2);
+#endif
     glfwSetWindowMonitor(window, NULL, inputHandler.window_pos_x,
                          inputHandler.window_pos_y, _windowed_width,
                          _windowed_height, 0);
+
     width = _windowed_width;
     height = _windowed_height;
+    ignore_mouse = true;
   }
   // Query and update framebuffer size
   int wframe, hframe;

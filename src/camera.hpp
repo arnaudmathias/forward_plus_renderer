@@ -18,8 +18,8 @@ class Camera {
   int height = 0;
   glm::vec2 old_mouse_pos = {};
   glm::vec2 mouse_pos = {};
-  float zNear = 0.1f;
-  float zFar = 50.0f;
+  float zNear = 0.5f;
+  float zFar = 40.0f;
   float fov = 80.0f;
 
   Camera(glm::vec3 pos, glm::vec3 target, int width = 1024, int height = 1024);

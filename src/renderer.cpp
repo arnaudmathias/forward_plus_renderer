@@ -199,7 +199,6 @@ void Renderer::switchShader(GLuint shader_id, int &current_shader_id) {
     setUniform(glGetUniformLocation(shader_id, "num_lights"), NUM_LIGHTS);
     setUniform(glGetUniformLocation(shader_id, "screen_size"),
                uniforms.screen_size);
-    setUniform(glGetUniformLocation(shader_id, "debug"), uniforms.debug);
     current_shader_id = shader_id;
   }
 }
@@ -246,6 +245,7 @@ void Renderer::draw() {
     }
   }
 
+  // Copy the depth buffer to the light pass framebuffer
   glBindFramebuffer(GL_READ_FRAMEBUFFER, depthpass_fbo);
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, lightpass_fbo);
   glBlitFramebuffer(0, 0, _width, _height, 0, 0, _width, _height,
@@ -285,6 +285,8 @@ void Renderer::draw() {
     switchShader(shading->id, current_shader_id);
     setUniform(glGetUniformLocation(shading->id, "workgroup_x"),
                static_cast<int>(workgroup_x));
+    setUniform(glGetUniformLocation(shading->id, "debug"),
+               uniforms.visibilty_debug);
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_lights);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_visible_lights);
@@ -305,11 +307,6 @@ void Renderer::draw() {
     switchBlendingState(false);
     for (const auto &attrib : this->_attribs) {
       if (attrib.alpha_mask == false) {
-        ubo.material = attrib.material;
-        /*glBindBuffer(GL_UNIFORM_BUFFER, ubo_id);
-        GLvoid *ubo_ptr = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-        memcpy(ubo_ptr, &ubo, sizeof(UBO));
-        glUnmapBuffer(GL_UNIFORM_BUFFER);*/
         glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo_id);
         updateUniforms(attrib, shading->id);
         setUniform(glGetUniformLocation(shading->id, "albedo_tex"),
@@ -330,11 +327,6 @@ void Renderer::draw() {
     switchDepthTestFunc(DepthTestFunc::Less);
     for (const auto &attrib : this->_attribs) {
       if (attrib.alpha_mask == true) {
-        ubo.material = attrib.material;
-        /*glBindBuffer(GL_UNIFORM_BUFFER, ubo_id);
-        GLvoid *ubo_ptr = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
-        memcpy(ubo_ptr, &ubo, sizeof(UBO));
-        glUnmapBuffer(GL_UNIFORM_BUFFER);*/
         glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo_id);
         updateUniforms(attrib, shading->id);
         setUniform(glGetUniformLocation(shading->id, "albedo_tex"),
@@ -351,7 +343,7 @@ void Renderer::draw() {
         drawVAOs(attrib.vao, attrib.state.primitiveMode);
       }
     }
-    if (uniforms.debug) {
+    if (uniforms.light_debug) {
       switchDepthTestFunc(DepthTestFunc::Less);
       switchShader(octahedron->id, current_shader_id);
       for (const auto &light : uniforms.lights.lights) {
@@ -447,7 +439,7 @@ void Renderer::clearScreen() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-GLenum Renderer::getGLRenderMode(enum PrimitiveMode mode) {
+GLenum Renderer::getGLRenderMode(PrimitiveMode mode) {
   GLenum gl_primitive_modes[12] = {GL_POINTS,
                                    GL_LINE_STRIP,
                                    GL_LINE_LOOP,
@@ -472,7 +464,7 @@ void Renderer::setState(const RenderState &new_state) {
   switchBlendingFunc(new_state.blendFunc);
 }
 
-void Renderer::switchPolygonMode(enum PolygonMode mode) {
+void Renderer::switchPolygonMode(PolygonMode mode) {
   GLenum gl_polygon_modes[3] = {GL_POINT, GL_LINE, GL_FILL};
   if (mode != _state.polygonMode) {
     unsigned int index_mode = static_cast<unsigned int>(mode);
@@ -481,7 +473,7 @@ void Renderer::switchPolygonMode(enum PolygonMode mode) {
   }
 }
 
-void Renderer::switchDepthTestFunc(enum DepthTestFunc mode) {
+void Renderer::switchDepthTestFunc(DepthTestFunc mode) {
   GLenum gl_depth_funcs[8] = {GL_LESS,    GL_NEVER,    GL_EQUAL,  GL_LEQUAL,
                               GL_GREATER, GL_NOTEQUAL, GL_GEQUAL, GL_ALWAYS};
   if (mode != _state.depthTestFunc) {
@@ -491,7 +483,7 @@ void Renderer::switchDepthTestFunc(enum DepthTestFunc mode) {
   }
 }
 
-void Renderer::switchBlendingFunc(enum BlendFunc mode) {
+void Renderer::switchBlendingFunc(BlendFunc mode) {
   GLenum gl_blend_funcs[14] = {GL_ZERO,           GL_ONE,
                                GL_SRC_COLOR,      GL_ONE_MINUS_SRC_COLOR,
                                GL_DST_COLOR,      GL_ONE_MINUS_DST_COLOR,

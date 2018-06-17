@@ -16,6 +16,8 @@ class Game {
 
  private:
   bool _debug_mode = false;
+  bool _light_debug_mode = false;
+  bool _visibilty_debug_mode = false;
   bool _static_light_mode = false;
   Camera* _camera = nullptr;
   Lights lights;

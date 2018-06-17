@@ -72,18 +72,6 @@ uniform int normal_tex;
 uniform int metallic_tex;
 uniform int roughness_tex;
 
-float get_diffuse(vec3 light_dir, vec3 normal) {
-    float diff = max(dot(light_dir, normal), 0.0);
-    return (diff);
-}
-
-float get_specular(vec3 light_dir, vec3 view_dir, vec3 normal) {
-    vec3 reflect_dir = reflect(-light_dir, normal);
-    vec3 halfway_dir = normalize(light_dir + view_dir);  
-    float spec = pow(max(dot(normal, halfway_dir), 0.0), material.specular_power);
-    return (spec);
-}
-
 float get_attenuation(float light_radius, float dist) {
 
     float cutoff = 0.3;
@@ -186,7 +174,7 @@ void main() {
 		count++;
 	    }
 	}
-	float shade = float(count) / float(MAX_LIGHTS_PER_TILE); 
+	float shade = float(count) / float(MAX_LIGHTS_PER_TILE * 2); 
 	color = vec3(shade);
     }
     out_hdr = vec4(color, alpha);

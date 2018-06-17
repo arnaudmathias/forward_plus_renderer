@@ -63,10 +63,10 @@ enum class BlendFunc {
 enum class PolygonMode { Point, Line, Fill };
 
 struct RenderState {
-  enum PrimitiveMode primitiveMode = PrimitiveMode::Triangles;
-  enum PolygonMode polygonMode = PolygonMode::Fill;
-  enum DepthTestFunc depthTestFunc = DepthTestFunc::Less;
-  enum BlendFunc blendFunc = BlendFunc::Zero;
+  PrimitiveMode primitiveMode = PrimitiveMode::Triangles;
+  PolygonMode polygonMode = PolygonMode::Fill;
+  DepthTestFunc depthTestFunc = DepthTestFunc::Less;
+  BlendFunc blendFunc = BlendFunc::Zero;
   bool depthTest = true;
   bool blending = true;
 };
@@ -90,6 +90,8 @@ struct Uniforms {
   glm::vec3 view_pos;
   float time = 0;
   int debug = 0;
+  int light_debug = 0;
+  int visibilty_debug = 0;
 };
 
 struct Attrib {
@@ -130,9 +132,9 @@ class Renderer {
   void clearScreen();
 
   void setState(const RenderState& new_state);
-  void switchPolygonMode(enum PolygonMode mode);
-  void switchDepthTestFunc(enum DepthTestFunc mode);
-  void switchBlendingFunc(enum BlendFunc mode);
+  void switchPolygonMode(PolygonMode mode);
+  void switchDepthTestFunc(DepthTestFunc mode);
+  void switchBlendingFunc(BlendFunc mode);
 
   void switchDepthTestState(bool state);
   void switchBlendingState(bool state);
@@ -170,7 +172,7 @@ class Renderer {
   void drawVAOs(VAO* vao, PrimitiveMode primitive_mode);
   void switchShader(GLuint shader_id, int& current_shader_id);
   void updateUniforms(const Attrib& attrib, const int shader_id);
-  GLenum getGLRenderMode(enum PrimitiveMode mode);
+  GLenum getGLRenderMode(PrimitiveMode mode);
 };
 
 static inline void setUniform(const GLint& location, const float& data) {
