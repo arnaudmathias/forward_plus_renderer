@@ -2,8 +2,7 @@
 
 Env::Env() noexcept : Env(0, 0) {}
 
-Env::Env(unsigned short width, unsigned short height)
-    : width(width), height(height) {
+Env::Env(unsigned int w, unsigned int h) : width(w), height(h) {
   if (!glfwInit()) return;
   setupWindowHint();
   std::string window_name = "Forward+ renderer";
@@ -11,23 +10,22 @@ Env::Env(unsigned short width, unsigned short height)
   const GLFWvidmode *mode = glfwGetVideoMode(primary_monitor);
   if (width == 0 && height == 0) {
     // Fullscreen
-    width = mode->width;
-    height = mode->height;
-    inputHandler.window_pos_x = 0;
-    inputHandler.window_pos_y = 0;
+    width = static_cast<unsigned int>(mode->width);
+    height = static_cast<unsigned int>(mode->height);
+    _fullscreen = true;
   } else {
     // Windowed
     _windowed_width = width;
     _windowed_height = height;
-    inputHandler.window_pos_x = (mode->width / 2) - (_windowed_width / 2);
-    inputHandler.window_pos_y = (mode->height / 2) - (_windowed_height / 2);
     primary_monitor = NULL;
   }
-  window = glfwCreateWindow(width, height, window_name.c_str(), NULL, NULL);
+  inputHandler.window_pos_x = (mode->width / 2) - (_windowed_width / 2);
+  inputHandler.window_pos_y = (mode->height / 2) - (_windowed_height / 2);
+  window = glfwCreateWindow(width, height, window_name.c_str(), primary_monitor,
+                            NULL);
   if (window) {
     glfwSetWindowMonitor(window, primary_monitor, inputHandler.window_pos_x,
-                         inputHandler.window_pos_y, _windowed_width,
-                         _windowed_height, 0);
+                         inputHandler.window_pos_y, width, height, 0);
   }
   inputHandler.mousex = static_cast<float>(width / 2);
   inputHandler.mousey = static_cast<float>(height / 2);
@@ -59,8 +57,6 @@ void Env::toggleFullscreen() {
                          mode->height, mode->refreshRate);
     width = mode->width;
     height = mode->height;
-
-    ignore_mouse = true;
   } else {
 #if defined(_WIN32)
     inputHandler.window_pos_x = (mode->width / 2) - (_windowed_width / 2);
@@ -68,12 +64,12 @@ void Env::toggleFullscreen() {
 #endif
     glfwSetWindowMonitor(window, NULL, inputHandler.window_pos_x,
                          inputHandler.window_pos_y, _windowed_width,
-                         _windowed_height, 0);
+                         _windowed_height, mode->refreshRate);
 
     width = _windowed_width;
     height = _windowed_height;
-    ignore_mouse = true;
   }
+  ignore_mouse = true;
   // Query and update framebuffer size
   int wframe, hframe;
   glfwGetFramebufferSize(window, &wframe, &hframe);
@@ -127,13 +123,14 @@ void Env::setupWindow() {
 
 void Env::setupContext() {
   glfwSwapInterval(0);
-  glEnable(GL_DEBUG_OUTPUT);
+  /*glEnable(GL_DEBUG_OUTPUT);
   glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
   glDebugMessageCallback(openglCallbackFunction, nullptr);
   glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL,
                         true);
   while (glGetError() != GL_NO_ERROR)
     ;  // Flush gl_error
+  */
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
   glEnable(GL_CULL_FACE);

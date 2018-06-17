@@ -46,3 +46,4 @@ if (MSVC)
 endif(MSVC)
 
 target_link_libraries(renderer glfw ${GLFW_LIBRARIES})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}")

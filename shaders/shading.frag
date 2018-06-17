@@ -1,5 +1,5 @@
 #version 450 core
-#define MAX_LIGHTS_PER_TILE 256
+#define MAX_LIGHTS_PER_TILE 1024
 layout (location = 0) out vec4 out_hdr;
 layout (location = 1) out vec3 out_normal;
 const float PI = 3.14159265359;

@@ -34,7 +34,6 @@ class Camera {
   float getAspectRatio();
 
  private:
-  void updateMatrix(float deltaTime);
   float pitch;
   float yaw;
   float speed;

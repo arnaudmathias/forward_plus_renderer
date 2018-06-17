@@ -2,7 +2,7 @@
 
 Game::Game(void) {
   _camera =
-      new Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+      new Camera(glm::vec3(-6.0f, -5.0f, 0.0f), glm::vec3(-5.0f, -5.0f, 0.0f));
 
   Model model = Model("data/sponza/sponza.obj");
   glm::mat4 scene_scale = glm::scale(glm::vec3(0.01f));
@@ -59,7 +59,7 @@ Game::Game(void) {
     lights.lights[i].position =
         glm::vec3(glm::linearRand(min_bound.x, max_bound.x), min_bound.y,
                   glm::linearRand(min_bound.z, max_bound.z));
-    lights.lights[i].radius = 2.0f;
+    lights.lights[i].radius = 4.0f;
     lights.lights[i].color =
         glm::vec3(glm::linearRand(0.0f, 1.0f), glm::linearRand(0.0f, 1.0f),
                   glm::linearRand(0.0f, 1.0f));

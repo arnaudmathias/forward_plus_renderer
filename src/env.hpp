@@ -34,7 +34,7 @@ class Env {
   GLFWwindow *window = nullptr;
   InputHandler inputHandler;
   Env() noexcept;
-  Env(unsigned short width, unsigned short height);
+  Env(unsigned int width, unsigned int height);
   ~Env();
 
   void toggleFullscreen();
