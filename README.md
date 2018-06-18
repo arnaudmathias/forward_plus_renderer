@@ -11,9 +11,9 @@ Overview
 ----
 
 As its name suggests, Forward+ is an extension to traditional forward rendering.  
-Before the final shading, a light culling stage, cull and store lights that contribute to the final pixel.
+Before the final shading, a light culling stage is introduced to cull and store lights that contribute to the final pixel.
 
-The rendering consist of **3** pass, the **depth prepass**, the **light culling** and the **final shading**.
+The rendering consist of 3 pass: the **depth prepass**, the **light culling** and the **final shading**.
 
 ### 1. Depth prepass
 
@@ -23,13 +23,13 @@ We fill the depth buffer by rendering the scene geometry without fragment shader
 
 ### 2. Light culling
 
-We split the screen in tile of 16 x 16 pixels. In this pass we'll use a compute shader to determine what lights are visible in each tile.
-A work group is created for each tile. Within that work group, there are 256 threads, one for each pixel in the tile.  
+In this pass we split the screen in tile of 16 x 16 pixels and use a compute shader to determine what lights are visible in each tile.  
+A workgroup is created for each tile. Within that workgroup, there are 256 threads, one for each pixel in the tile.  
   
 The depth buffer generated in the depth prepass is used to determine the min and max depth value within a tile.
-A thread by work group calculates the frustum planes for that tile, which will be shared by all threads in the work group.
+A thread calculates the frustum planes for that tile, which will be shared by all threads in the workgroup.
 
-Then each thread calculate in parallel (256 max) whether or not a light is inside the frustum.
+Then each thread calculates in parallel (256 max) whether or not a light is inside the frustum.
 The visible light indices are stored back by a single thread into a SSBO (Shader Storage Buffer Object).
 
 ![light visibility](screenshots/light_visibility.jpg)
@@ -53,7 +53,7 @@ cmake .
 
 ### Controls
 ```
-Mouse movement - Orients the camera.
+Mouse movement - Orients the camera
 W,A,S,D        - Move around
 F              - Toggle fullscreen
 I              - Toggle debug info HUD  
