@@ -362,7 +362,8 @@ void Renderer::draw() {
     if (uniforms.light_debug) {
       switchDepthTestFunc(DepthTestFunc::Less);
       switchShader(octahedron->id, current_shader_id);
-      for (const auto &light : uniforms.lights.lights) {
+      for (unsigned int i = 0; i < NUM_LIGHTS; ++i) {
+        Light light = uniforms.lights.lights[i];
         setUniform(glGetUniformLocation(octahedron->id, "color"), light.color);
         glm::mat4 model =
             glm::translate(light.position) * glm::scale(glm::vec3(0.15f));
