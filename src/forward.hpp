@@ -1,6 +1,6 @@
 #pragma once
 #define TILE_SIZE 16
-#define NUM_LIGHTS 1024
+#define NUM_LIGHTS 16
 #define MAX_LIGHTS_PER_TILE 1024
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
@@ -44,7 +44,7 @@ struct Light {
 };
 
 struct Lights {
-  struct Light lights[NUM_LIGHTS] = {};
+  struct Light lights[MAX_LIGHTS_PER_TILE] = {};
 };
 
 struct Vertex {

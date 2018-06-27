@@ -4,9 +4,11 @@ ShaderCache::ShaderCache(void) {
   _shaders.emplace("default", new Shader("shaders/default"));
   _shaders.emplace("shading", new Shader("shaders/shading"));
   _shaders.emplace("depthprepass", new Shader("shaders/depthprepass"));
-  _shaders.emplace("lightculling", new Shader("shaders/lightculling"));
   _shaders.emplace("octahedron", new Shader("shaders/octahedron"));
   _shaders.emplace("text", new Shader("shaders/text"));
+  if (GLAD_GL_VERSION_4_3) {
+    _shaders.emplace("lightculling", new Shader("shaders/lightculling"));
+  }
 }
 
 ShaderCache::ShaderCache(ShaderCache const& src) { *this = src; }

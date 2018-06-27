@@ -81,7 +81,13 @@ const std::string Shader::getShaderSource(std::string filename) {
   }
   std::fstream shaderFile(filename);
   if (shaderFile) {
-    while (getline(shaderFile, line)) fileContent += line + "\n";
+    while (getline(shaderFile, line)) {
+      if (line.find("#version") != std::string::npos) {
+        int version = GLVersion.major * 100 + GLVersion.minor * 10;
+        line = "#version " + std::to_string(version) + " core";
+      }
+      fileContent += line + "\n";
+    }
     shaderFile.close();
   } else {
     std::cerr << "Invalid shader: " << filename << "\n";

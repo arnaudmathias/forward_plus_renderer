@@ -19,7 +19,7 @@ out VS_OUT {
 
 void main() {
   gl_Position = MVP * vec4(vert_pos, 1.0);
-	vec3 frag_pos = vec3(M * vec4(vert_pos, 1.0));
+  vec3 frag_pos = vec3(M * vec4(vert_pos, 1.0));
 
   mat3 normal_matrix = transpose(inverse(mat3(M)));
   vec3 N = normalize(vec3(normal_matrix * vert_normal));

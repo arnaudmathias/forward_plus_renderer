@@ -72,25 +72,33 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-  // Lights SSBO
-  glGenBuffers(1, &ssbo_lights);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_lights);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Lights), &uniforms.lights,
-               GL_DYNAMIC_DRAW);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_lights);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+  if (GLVersion.major >= 4 && GLVersion.minor >= 3) {
+    // Lights SSBO
+    glGenBuffers(1, &ssbo_lights);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_lights);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Lights), &uniforms.lights,
+                 GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_lights);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-  GLuint workgroup_x = (_width + (_width % TILE_SIZE)) / TILE_SIZE;
-  GLuint workgroup_y = (_height + (_height % TILE_SIZE)) / TILE_SIZE;
-  // Visible light indices SSBO
-  // TODO: Handle resizing
-  glGenBuffers(1, &ssbo_visible_lights);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_visible_lights);
-  glBufferData(GL_SHADER_STORAGE_BUFFER,
-               sizeof(int) * workgroup_x * workgroup_y * MAX_LIGHTS_PER_TILE,
-               NULL, GL_DYNAMIC_DRAW);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_visible_lights);
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    GLuint workgroup_x = (_width + (_width % TILE_SIZE)) / TILE_SIZE;
+    GLuint workgroup_y = (_height + (_height % TILE_SIZE)) / TILE_SIZE;
+    // Visible light indices SSBO
+    glGenBuffers(1, &ssbo_visible_lights);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_visible_lights);
+    glBufferData(GL_SHADER_STORAGE_BUFFER,
+                 sizeof(int) * workgroup_x * workgroup_y * MAX_LIGHTS_PER_TILE,
+                 NULL, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_visible_lights);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+  } else {
+    glGenBuffers(1, &ssbo_lights);
+    glBindBuffer(GL_UNIFORM_BUFFER, ssbo_lights);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(Lights), &uniforms.lights,
+                 GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, ssbo_lights);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+  }
 
   // Material UBO
   glGenBuffers(1, &ubo_id);
@@ -253,27 +261,36 @@ void Renderer::draw() {
 
   GLuint workgroup_x = (_width + (_width % TILE_SIZE)) / TILE_SIZE;
   GLuint workgroup_y = (_height + (_height % TILE_SIZE)) / TILE_SIZE;
-  // Light culling
-  {
-    glBindFramebuffer(GL_FRAMEBUFFER, lightpass_fbo);
-    switchDepthTestFunc(DepthTestFunc::Equal);
-    glClear(GL_COLOR_BUFFER_BIT);
-
+  // Update Lights buffer
+  if (GLVersion.major >= 4 && GLVersion.minor >= 3) {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_lights);
     GLvoid *lights_ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
     memcpy(lights_ptr, &uniforms.lights, sizeof(Lights));
     glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+  } else {
+    glBindBuffer(GL_UNIFORM_BUFFER, ssbo_lights);
+    GLvoid *lights_ptr = glMapBuffer(GL_UNIFORM_BUFFER, GL_WRITE_ONLY);
+    memcpy(lights_ptr, &uniforms.lights, sizeof(Lights));
+    glUnmapBuffer(GL_UNIFORM_BUFFER);
+  }
+  if (GLVersion.major >= 4 && GLVersion.minor >= 3) {
+    // Light culling
+    {
+      glBindFramebuffer(GL_FRAMEBUFFER, lightpass_fbo);
+      switchDepthTestFunc(DepthTestFunc::Equal);
+      glClear(GL_COLOR_BUFFER_BIT);
 
-    switchShader(lightculling->id, current_shader_id);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_lights);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_visible_lights);
+      switchShader(lightculling->id, current_shader_id);
+      glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_lights);
+      glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_visible_lights);
 
-    glActiveTexture(GL_TEXTURE0);
-    setUniform(glGetUniformLocation(lightculling->id, "depthmap"), 0);
-    glBindTexture(GL_TEXTURE_2D, depthpass_texture_depth_id);
+      glActiveTexture(GL_TEXTURE0);
+      setUniform(glGetUniformLocation(lightculling->id, "depthmap"), 0);
+      glBindTexture(GL_TEXTURE_2D, depthpass_texture_depth_id);
 
-    glDispatchCompute(workgroup_x, workgroup_y, 1);
-    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+      glDispatchCompute(workgroup_x, workgroup_y, 1);
+      glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+    }
   }
 
   // Light pass
@@ -288,8 +305,14 @@ void Renderer::draw() {
     setUniform(glGetUniformLocation(shading->id, "debug"),
                uniforms.visibilty_debug);
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_lights);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_visible_lights);
+    if (GLVersion.major >= 4 && GLVersion.minor >= 3) {
+      glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_lights);
+      glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_visible_lights);
+      glBindBufferBase(GL_UNIFORM_BUFFER, 2, ubo_id);
+    } else {
+      glBindBufferBase(GL_UNIFORM_BUFFER, 0, ssbo_lights);
+      glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo_id);
+    }
 
     glActiveTexture(GL_TEXTURE0 + 0);
     glBindTexture(GL_TEXTURE_2D_ARRAY, uniforms.albedo_array->id);
@@ -307,7 +330,6 @@ void Renderer::draw() {
     switchBlendingState(false);
     for (const auto &attrib : this->_attribs) {
       if (attrib.alpha_mask == false) {
-        glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo_id);
         updateUniforms(attrib, shading->id);
         setUniform(glGetUniformLocation(shading->id, "albedo_tex"),
                    attrib.albedo);
@@ -317,9 +339,6 @@ void Renderer::draw() {
                    attrib.roughness);
         setUniform(glGetUniformLocation(shading->id, "normal_tex"),
                    attrib.normal);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_lights);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_visible_lights);
-        glBindBufferBase(GL_UNIFORM_BUFFER, 2, ubo_id);
         drawVAOs(attrib.vao, attrib.state.primitiveMode);
       }
     }
@@ -337,9 +356,6 @@ void Renderer::draw() {
                    attrib.roughness);
         setUniform(glGetUniformLocation(shading->id, "normal_tex"),
                    attrib.normal);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo_lights);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_visible_lights);
-        glBindBufferBase(GL_UNIFORM_BUFFER, 2, ubo_id);
         drawVAOs(attrib.vao, attrib.state.primitiveMode);
       }
     }
@@ -406,10 +422,19 @@ void Renderer::update(const Env &env) {
 void Renderer::updateRessources() {
   GLuint workgroup_x = (_width + (_width % TILE_SIZE)) / TILE_SIZE;
   GLuint workgroup_y = (_height + (_height % TILE_SIZE)) / TILE_SIZE;
-  glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_visible_lights);
-  glBufferData(GL_SHADER_STORAGE_BUFFER,
-               sizeof(int) * workgroup_x * workgroup_y * MAX_LIGHTS_PER_TILE,
-               NULL, GL_DYNAMIC_DRAW);
+  if (GLVersion.major >= 4 && GLVersion.minor >= 3) {
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_visible_lights);
+    glBufferData(GL_SHADER_STORAGE_BUFFER,
+                 sizeof(int) * workgroup_x * workgroup_y * MAX_LIGHTS_PER_TILE,
+                 NULL, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+  } else {
+    glBindBuffer(GL_UNIFORM_BUFFER, ssbo_visible_lights);
+    glBufferData(GL_UNIFORM_BUFFER,
+                 sizeof(int) * workgroup_x * workgroup_y * MAX_LIGHTS_PER_TILE,
+                 NULL, GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+  }
 
   glBindTexture(GL_TEXTURE_2D, depthpass_texture_depth_id);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _width, _height, 0,

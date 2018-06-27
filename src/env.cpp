@@ -97,8 +97,13 @@ void Env::changeMouseState(MouseState state) {
 }
 
 void Env::setupWindowHint() {
+#if defined(__APPLE__)
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+#elif defined(_WIN32) || defined(__linux__)
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+#endif
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);

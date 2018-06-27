@@ -45,6 +45,7 @@ struct LightingResult {
     vec3 specular;
 };
 
+#if __VERSION__ >= 430
 layout (std140, binding = 0) readonly buffer lights_data { 
     Light lights[];
 };
@@ -56,6 +57,15 @@ layout(std430, binding = 1) readonly buffer visible_lights_indices {
 layout (std140, binding = 2) uniform material_data { 
     Material material;
 };
+#else
+layout (std140) uniform lights_data { 
+    Light lights[MAX_LIGHTS_PER_TILE];
+};
+
+layout (std140) uniform material_data { 
+    Material material;
+};
+#endif
 
 uniform mat4 M;
 uniform int num_lights;
@@ -139,9 +149,14 @@ void main() {
     f0 = mix(f0, albedo, metallic);
 
     vec3 lo = vec3(0.0);
+#if __VERSION__ >= 430
     for (uint i = 0; i < MAX_LIGHTS_PER_TILE; i++) {
 	if (lights_indices[offset + i] != -1) {
 	    int indices = lights_indices[offset + i];
+#else
+    for (uint i = 0; i < num_lights; i++) {
+	    int indices = int(i);
+#endif
 	    vec3 ts_light_pos = vs_in.TBN * lights[indices].position;
 	    vec3 ts_light_dir = normalize(ts_light_pos - vs_in.ts_frag_pos);
 	    vec3 ts_halfway = normalize(ts_view_dir + ts_light_dir);
@@ -163,10 +178,13 @@ void main() {
 
 	    float ndotl = max(dot(normal, ts_light_dir), 0.0);                
 	    lo += (kd * albedo / PI + specular) * radiance * ndotl; 
+#if __VERSION__ >= 430
 	}
+#endif
     }
     vec3 ambient = vec3(0.03) * albedo;
     vec3 color = ambient + lo;
+#if __VERSION__ >= 430
     if (debug == 1) {
 	uint count;
 	for (uint i = 0; i < MAX_LIGHTS_PER_TILE; i++) {
@@ -177,6 +195,7 @@ void main() {
 	float shade = float(count) / float(MAX_LIGHTS_PER_TILE * 2); 
 	color = vec3(shade);
     }
+#endif
     out_hdr = vec4(color, alpha);
     out_normal = normal;
 }
