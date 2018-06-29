@@ -326,13 +326,13 @@ void Renderer::draw() {
       if (attrib.alpha_mask == false) {
         updateUniforms(attrib, shading->id);
         setUniform(glGetUniformLocation(shading->id, "albedo_tex"),
-                   attrib.albedo);
+                   attrib.albedo_index);
         setUniform(glGetUniformLocation(shading->id, "metallic_tex"),
-                   attrib.metallic);
+                   attrib.metallic_index);
         setUniform(glGetUniformLocation(shading->id, "roughness_tex"),
-                   attrib.roughness);
+                   attrib.roughness_index);
         setUniform(glGetUniformLocation(shading->id, "normal_tex"),
-                   attrib.normal);
+                   attrib.normal_index);
         drawVAOs(attrib.vao, attrib.state.primitiveMode);
       }
     }
@@ -343,13 +343,13 @@ void Renderer::draw() {
         glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo_id);
         updateUniforms(attrib, shading->id);
         setUniform(glGetUniformLocation(shading->id, "albedo_tex"),
-                   attrib.albedo);
+                   attrib.albedo_index);
         setUniform(glGetUniformLocation(shading->id, "metallic_tex"),
-                   attrib.metallic);
+                   attrib.metallic_index);
         setUniform(glGetUniformLocation(shading->id, "roughness_tex"),
-                   attrib.roughness);
+                   attrib.roughness_index);
         setUniform(glGetUniformLocation(shading->id, "normal_tex"),
-                   attrib.normal);
+                   attrib.normal_index);
         drawVAOs(attrib.vao, attrib.state.primitiveMode);
       }
     }

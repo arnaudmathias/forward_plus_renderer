@@ -97,15 +97,14 @@ struct Uniforms {
 
 struct Attrib {
   glm::mat4 model = glm::mat4(1.0f);
-  std::string shader_key = "";
   std::shared_ptr<VAO> vao;
   Material material;
 
-  int albedo = -1;
-  int normal = -1;
-  int metallic = -1;
-  int roughness = -1;
-  int opacity = -1;
+  int albedo_index = -1;
+  int normal_index = -1;
+  int metallic_index = -1;
+  int roughness_index = -1;
+  int opacity_index = -1;
 
   bool alpha_mask = false;
   RenderState state;

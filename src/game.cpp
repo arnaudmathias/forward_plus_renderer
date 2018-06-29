@@ -4,19 +4,22 @@ Game::Game(void) {
   _camera = std::make_unique<Camera>(glm::vec3(-6.0f, -5.0f, 0.0f),
                                      glm::vec3(-5.0f, -5.0f, 0.0f));
 
-  Model model = Model("data/sponza/sponza.obj");
+  Model* model = new Model("data/sponza/sponza.obj");
   glm::mat4 scene_scale = glm::scale(glm::vec3(0.01f));
-  glm::mat4 scene_transform = glm::translate(-model.aabb_center);
-  scene_aabb_center = glm::vec3(scene_scale * scene_transform *
-                                glm::vec4(model.aabb_center, 1.0f));
-  scene_aabb_halfsize = glm::vec3(scene_scale * scene_transform *
-                                  glm::vec4(model.aabb_halfsize, 0.0f));
+  glm::mat4 scene_transform = glm::translate(
+      -glm::vec3(scene_scale * glm::vec4(model->aabb_center, 1.0f)));
+
+  glm::mat4 scene_model = scene_transform * scene_scale;
+  scene_aabb_center =
+      glm::vec3(scene_model * glm::vec4(model->aabb_center, 1.0f));
+  scene_aabb_halfsize =
+      glm::vec3(scene_model * glm::vec4(model->aabb_halfsize, 0.0f));
 
   std::vector<std::string> albedo_textures;
   std::vector<std::string> normal_textures;
   std::vector<std::string> metallic_textures;
   std::vector<std::string> roughness_textures;
-  for (const auto& mesh : model.meshes) {
+  for (const auto& mesh : model->meshes) {
     albedo_textures.push_back(mesh.diffuse_texname);
     normal_textures.push_back(mesh.bump_texname);
     metallic_textures.push_back(mesh.metallic_texname);
@@ -27,22 +30,22 @@ Game::Game(void) {
   _metallic_array = std::make_shared<TextureArray>(metallic_textures);
   _roughness_array = std::make_shared<TextureArray>(roughness_textures);
 
-  for (const auto& mesh : model.meshes) {
+  for (const auto& mesh : model->meshes) {
     std::vector<Vertex> vertices;
     for (size_t i = mesh.vertexOffset;
-         i < model.vertices.size() && i < mesh.vertexOffset + mesh.indexCount;
+         i < model->vertices.size() && i < mesh.vertexOffset + mesh.indexCount;
          i++) {
-      vertices.push_back(model.vertices[i]);
+      vertices.push_back(model->vertices[i]);
     }
     render::Attrib attrib;
-    attrib.shader_key = "default";
-    attrib.model = scene_scale * scene_transform;
+    attrib.model = scene_model;
     attrib.material = mesh.material;
 
-    attrib.albedo = _albedo_array->getTextureIndex(mesh.diffuse_texname);
-    attrib.normal = _normal_array->getTextureIndex(mesh.bump_texname);
-    attrib.metallic = _metallic_array->getTextureIndex(mesh.metallic_texname);
-    attrib.roughness =
+    attrib.albedo_index = _albedo_array->getTextureIndex(mesh.diffuse_texname);
+    attrib.normal_index = _normal_array->getTextureIndex(mesh.bump_texname);
+    attrib.metallic_index =
+        _metallic_array->getTextureIndex(mesh.metallic_texname);
+    attrib.roughness_index =
         _roughness_array->getTextureIndex(mesh.roughness_texname);
 
     attrib.alpha_mask = mesh.alpha_mask;
@@ -50,6 +53,7 @@ Game::Game(void) {
     attrib.vao = std::make_shared<VAO>(vertices);
     attribs.push_back(attrib);
   }
+  delete model;
   glm::vec3 min_bound = scene_aabb_center - scene_aabb_halfsize;
   glm::vec3 max_bound = scene_aabb_center + scene_aabb_halfsize;
   min_bound = glm::vec3(min_bound.x + 3.0f, min_bound.y, min_bound.z + 3.0f);
