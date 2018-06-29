@@ -33,7 +33,6 @@ set(SOURCE_FILES
   src/camera.cpp
   src/vao.cpp
   src/texture.cpp
-  src/culling.cpp
   src/io.cpp
   src/model.cpp
   third-party/glad/src/glad.c)
