@@ -1,6 +1,7 @@
 #pragma once
 #include <algorithm>
 #include <map>
+#include <memory>
 #include <unordered_map>
 #include <vector>
 #include "env.hpp"
@@ -77,10 +78,10 @@ struct UBO {
 
 struct Uniforms {
   Lights lights;
-  TextureArray* albedo_array;
-  TextureArray* normal_array;
-  TextureArray* metallic_array;
-  TextureArray* roughness_array;
+  std::shared_ptr<TextureArray> albedo_array;
+  std::shared_ptr<TextureArray> normal_array;
+  std::shared_ptr<TextureArray> metallic_array;
+  std::shared_ptr<TextureArray> roughness_array;
   glm::mat4 view;
   glm::mat4 proj;
   glm::mat4 inv_proj;
@@ -97,7 +98,7 @@ struct Uniforms {
 struct Attrib {
   glm::mat4 model = glm::mat4(1.0f);
   std::string shader_key = "";
-  VAO* vao = nullptr;
+  std::shared_ptr<VAO> vao;
   Material material;
 
   int albedo = -1;
@@ -160,8 +161,8 @@ class Renderer {
   int _width = 0;
   int _height = 0;
   ShaderCache _shaderCache;
-  VAO* _vao_quad = nullptr;
-  VAO* _vao_octahedron = nullptr;
+  std::shared_ptr<VAO> _vao_quad;
+  std::shared_ptr<VAO> _vao_octahedron;
 
   RenderState _state;
 
@@ -169,7 +170,7 @@ class Renderer {
   UiRenderer _uiRenderer;
 
   void updateRessources();
-  void drawVAOs(VAO* vao, PrimitiveMode primitive_mode);
+  void drawVAOs(std::shared_ptr<VAO> vao, PrimitiveMode primitive_mode);
   void switchShader(GLuint shader_id, int& current_shader_id);
   void updateUniforms(const Attrib& attrib, const int shader_id);
   GLenum getGLRenderMode(PrimitiveMode mode);

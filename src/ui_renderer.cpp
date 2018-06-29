@@ -3,7 +3,7 @@
 namespace render {
 UiRenderer::UiRenderer(void) {
   std::vector<glm::vec4> dummy(6);
-  _vao = new VAO(dummy);
+  _vao = std::make_unique<VAO>(dummy);
 }
 
 UiRenderer::UiRenderer(UiRenderer const &src) { *this = src; }
@@ -14,7 +14,6 @@ UiRenderer::~UiRenderer(void) {
     delete it->second;
     it++;
   }
-  delete _vao;
 }
 
 UiRenderer &UiRenderer::operator=(UiRenderer const &rhs) {
@@ -23,9 +22,9 @@ UiRenderer &UiRenderer::operator=(UiRenderer const &rhs) {
   return (*this);
 }
 
-void UiRenderer::renderUI(Shader *shader, std::string texture_name, float pos_x,
-                          float pos_y, float scale, glm::mat4 ortho,
-                          bool centered) {
+void UiRenderer::renderUI(std::shared_ptr<Shader> shader,
+                          std::string texture_name, float pos_x, float pos_y,
+                          float scale, glm::mat4 ortho, bool centered) {
   if (shader == nullptr) return;
   Texture *texture = nullptr;
   auto it = _texture_cache.find(texture_name);

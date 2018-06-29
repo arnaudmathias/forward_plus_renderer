@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(renderer)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 
 set(default_build_type "Release")
 if(EXISTS "${CMAKE_SOURCE_DIR}/.git")

@@ -107,20 +107,17 @@ Renderer::Renderer(int width, int height) : _width(width), _height(height) {
   glBindBufferBase(GL_UNIFORM_BUFFER, 1, ubo_id);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-  _vao_quad = new VAO({{-1.0f, 1.0f, 0.0f, 0.0f},
-                       {-1.0f, -1.0f, 0.0f, 1.0f},
-                       {1.0f, -1.0f, 1.0f, 1.0f},
-                       {-1.0f, 1.0f, 0.0f, 0.0f},
-                       {1.0f, -1.0f, 1.0f, 1.0f},
-                       {1.0f, 1.0f, 1.0f, 0.0f}});
-  _vao_octahedron = new VAO(
-      {{0.0f, 1.0f, 0.0f},
-       {0.0f, -1.0f, 0.0f},
-       {0.0f, 0.0f, 1.0f},
-       {1.0f, 0.0f, 0.0f},
-       {-1.0f, 0.0f, 0.0f},
-       {0.0f, 0.0f, -1.0f}},
-      {0, 2, 3, 4, 2, 0, 0, 5, 4, 3, 5, 0, 1, 2, 4, 3, 2, 1, 1, 5, 3, 4, 5, 1});
+  std::vector<glm::vec4> vertices_quad = {
+      {-1.0f, 1.0f, 0.0f, 0.0f}, {-1.0f, -1.0f, 0.0f, 1.0f},
+      {1.0f, -1.0f, 1.0f, 1.0f}, {-1.0f, 1.0f, 0.0f, 0.0f},
+      {1.0f, -1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 0.0f}};
+  std::vector<glm::vec3> vertices_octa = {
+      {0.0f, 1.0f, 0.0f}, {0.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f},
+      {1.0f, 0.0f, 0.0f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f}};
+  std::vector<unsigned int> indices_octa = {0, 2, 3, 4, 2, 0, 0, 5, 4, 3, 5, 0,
+                                            1, 2, 4, 3, 2, 1, 1, 5, 3, 4, 5, 1};
+  _vao_quad = std::make_shared<VAO>(vertices_quad);
+  _vao_octahedron = std::make_shared<VAO>(vertices_octa, indices_octa);
 }
 
 Renderer::Renderer(Renderer const &src) { *this = src; }
@@ -137,9 +134,6 @@ Renderer::~Renderer(void) {
   glDeleteTextures(1, &lightpass_texture_normal_id);
   glDeleteTextures(1, &lightpass_texture_depth_id);
   glDeleteFramebuffers(1, &lightpass_fbo);
-
-  delete _vao_quad;
-  delete _vao_octahedron;
 }
 
 Renderer &Renderer::operator=(Renderer const &rhs) {
@@ -229,11 +223,11 @@ void Renderer::draw() {
   RenderState backup_state = _state;
   int current_shader_id = -1;
 
-  Shader *depthprepass = _shaderCache.getShader("depthprepass");
-  Shader *lightculling = _shaderCache.getShader("lightculling");
-  Shader *shading = _shaderCache.getShader("shading");
-  Shader *octahedron = _shaderCache.getShader("octahedron");
-  Shader *def = _shaderCache.getShader("default");
+  std::shared_ptr<Shader> depthprepass = _shaderCache.getShader("depthprepass");
+  std::shared_ptr<Shader> lightculling = _shaderCache.getShader("lightculling");
+  std::shared_ptr<Shader> shading = _shaderCache.getShader("shading");
+  std::shared_ptr<Shader> octahedron = _shaderCache.getShader("octahedron");
+  std::shared_ptr<Shader> def = _shaderCache.getShader("default");
 
   glViewport(0, 0, _width, _height);
   // Depth prepass
@@ -397,7 +391,8 @@ void Renderer::draw() {
   glBindVertexArray(0);
 }
 
-void Renderer::drawVAOs(VAO *vao, render::PrimitiveMode primitive_mode) {
+void Renderer::drawVAOs(std::shared_ptr<VAO> vao,
+                        render::PrimitiveMode primitive_mode) {
   GLenum mode = getGLRenderMode(primitive_mode);
   if (vao != nullptr) {
     if (vao->indices_size != 0) {

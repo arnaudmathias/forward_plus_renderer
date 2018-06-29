@@ -6,7 +6,7 @@ namespace render {
 TextRenderer::TextRenderer(void) {
   loadFont("data/fonts/minecraft.ttf");
   std::vector<glm::vec4> dummy(6);
-  _vao = new VAO(dummy);
+  _vao = std::make_unique<VAO>(dummy);
 }
 
 void TextRenderer::loadFont(std::string font_filename, float size) {
@@ -76,15 +76,14 @@ TextRenderer::~TextRenderer() {
       glDeleteTextures(1, &character.second.textureID);
     }
   }
-  delete _vao;
 }
 void TextRenderer::update(const Env &env) {
   _ortho = glm::ortho(0.0f, static_cast<float>(env.width), 0.0f,
                       static_cast<float>(env.height));
 }
 
-void TextRenderer::renderText(Shader *shader, float pos_x, float pos_y,
-                              float scale, std::string text,
+void TextRenderer::renderText(std::shared_ptr<Shader> shader, float pos_x,
+                              float pos_y, float scale, std::string text,
                               TextProperties properties) {
   if (shader == nullptr) return;
   Font font;

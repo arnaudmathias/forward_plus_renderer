@@ -1,5 +1,6 @@
 #pragma once
 #include <map>
+#include <memory>
 #include "env.hpp"
 #include "forward.hpp"
 #include "io.hpp"
@@ -32,13 +33,12 @@ class TextRenderer {
 
   void loadFont(std::string font_filename, float size = 48.0f);
   void update(const Env &env);
-  void renderText(Shader *shader, float pos_x, float pos_y, float scale,
-                  std::string text, TextProperties properties);
+  void renderText(std::shared_ptr<Shader> shader, float pos_x, float pos_y,
+                  float scale, std::string text, TextProperties properties);
 
  private:
   glm::mat4 _ortho;
   std::map<std::string, Font> _font_map;
-  // std::map<GLchar, Character> _characters;
-  VAO *_vao = nullptr;
+  std::unique_ptr<VAO> _vao;
 };
 }  // namespace render

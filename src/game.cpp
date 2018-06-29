@@ -1,8 +1,8 @@
 #include "game.hpp"
 
 Game::Game(void) {
-  _camera =
-      new Camera(glm::vec3(-6.0f, -5.0f, 0.0f), glm::vec3(-5.0f, -5.0f, 0.0f));
+  _camera = std::make_unique<Camera>(glm::vec3(-6.0f, -5.0f, 0.0f),
+                                     glm::vec3(-5.0f, -5.0f, 0.0f));
 
   Model model = Model("data/sponza/sponza.obj");
   glm::mat4 scene_scale = glm::scale(glm::vec3(0.01f));
@@ -22,10 +22,10 @@ Game::Game(void) {
     metallic_textures.push_back(mesh.metallic_texname);
     roughness_textures.push_back(mesh.roughness_texname);
   }
-  _albedo_array = new TextureArray(albedo_textures);
-  _normal_array = new TextureArray(normal_textures);
-  _metallic_array = new TextureArray(metallic_textures);
-  _roughness_array = new TextureArray(roughness_textures);
+  _albedo_array = std::make_shared<TextureArray>(albedo_textures);
+  _normal_array = std::make_shared<TextureArray>(normal_textures);
+  _metallic_array = std::make_shared<TextureArray>(metallic_textures);
+  _roughness_array = std::make_shared<TextureArray>(roughness_textures);
 
   for (const auto& mesh : model.meshes) {
     std::vector<Vertex> vertices;
@@ -47,7 +47,7 @@ Game::Game(void) {
 
     attrib.alpha_mask = mesh.alpha_mask;
 
-    attrib.vao = new VAO(vertices);
+    attrib.vao = std::make_shared<VAO>(vertices);
     attribs.push_back(attrib);
   }
   glm::vec3 min_bound = scene_aabb_center - scene_aabb_halfsize;
@@ -70,32 +70,17 @@ Game::Game(void) {
 
 Game::Game(Game const& src) { *this = src; }
 
-Game::~Game(void) {
-  delete _camera;
-  for (auto& attrib : attribs) {
-    if (attrib.vao != nullptr) {
-      delete attrib.vao;
-    }
-  }
-  if (_albedo_array != nullptr) {
-    delete _albedo_array;
-  }
-  if (_normal_array != nullptr) {
-    delete _normal_array;
-  }
-  if (_metallic_array != nullptr) {
-    delete _metallic_array;
-  }
-  if (_roughness_array != nullptr) {
-    delete _roughness_array;
-  }
-}
+Game::~Game(void) {}
 
 Game& Game::operator=(Game const& rhs) {
   if (this != &rhs) {
-    this->_debug_mode = rhs._debug_mode;
-    this->_static_light_mode = rhs._static_light_mode;
-    this->_camera = new Camera(*rhs._camera);
+    _debug_mode = rhs._debug_mode;
+    _static_light_mode = rhs._static_light_mode;
+    _camera = std::make_unique<Camera>(*rhs._camera);
+    _albedo_array = std::make_shared<TextureArray>(*rhs._albedo_array);
+    _normal_array = std::make_shared<TextureArray>(*rhs._normal_array);
+    _metallic_array = std::make_shared<TextureArray>(*rhs._metallic_array);
+    _roughness_array = std::make_shared<TextureArray>(*rhs._roughness_array);
   }
   return (*this);
 }
