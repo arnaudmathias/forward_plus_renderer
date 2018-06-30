@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(default_build_type "Release")
 if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
   set(default_build_type "RelWithDebInfo")
+  add_definitions(-DGLDEBUG)
 endif()
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)

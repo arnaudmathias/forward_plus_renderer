@@ -107,6 +107,9 @@ void Env::setupWindowHint() {
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
+#ifdef GLDEBUG
+  glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+#endif
 }
 
 void Env::setupWindow() {
@@ -128,14 +131,17 @@ void Env::setupWindow() {
 
 void Env::setupContext() {
   glfwSwapInterval(0);
-  /*glEnable(GL_DEBUG_OUTPUT);
-  glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-  glDebugMessageCallback(openglCallbackFunction, nullptr);
-  glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL,
-                        true);
+#ifdef GLDEBUG
+  glEnable(GL_DEBUG_OUTPUT);
+  if (GLAD_GL_ARB_debug_output) {
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    glDebugMessageCallback(openglCallbackFunction, nullptr);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL,
+                          true);
+  }
   while (glGetError() != GL_NO_ERROR)
     ;  // Flush gl_error
-  */
+#endif
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
   glEnable(GL_CULL_FACE);
